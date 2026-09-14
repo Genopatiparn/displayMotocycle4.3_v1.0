@@ -1,0 +1,5 @@
+{
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "platformio-ide.autoReinit": true,
+    "cmake.sourceDirectory": "E:/ecu_shop/displayMotocycle4.3_v1.0/displayMotocycle4.3_v1.0/src/application/ui_home"
+}
