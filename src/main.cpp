@@ -2,7 +2,10 @@
 
 #include "Display_RGB.h"
 #include "LVGL_Driver.h"
-#include "application/ui_home/ui.h"
+#include "hardware_config.h"
+#include "adc_button.h"
+#include "screen_manager.h"
+#include "ui_home/ui.h"
 
 // ตัวแปรสำหรับจำลองข้อมูล
 uint16_t rpm = 0;
@@ -31,20 +34,42 @@ static int32_t last_engine_temp = -1;
 unsigned long last_ui_update = 0;
 const uint8_t UI_UPDATE_INTERVAL = 50;
 
+// ตัวแปรสำหรับ button debounce และ debug
+static button_status_t last_btn12 = BTN_NONE;
+static button_status_t last_btn34 = BTN_NONE;
+static unsigned long last_btn_debug_time = 0;
+static bool adc_initialized = false;
+
 void setup()
 {
     Serial.begin(115200);
     delay(2000);
+    
+    Serial.println("\n\n=== ESP32-S3 Motorcycle Display ===");
+
+    // Initialize ADS1115 for button input
+    Serial.println("Initializing ADS1115...");
+    adc_initialized = ADC_Button_Init();
+    if (!adc_initialized) {
+        Serial.println("WARNING: ADS1115 initialization failed!");
+        Serial.printf("Check I2C wiring (SDA=GPIO%d, SCL=GPIO%d, address=0x%02X)\n",
+                      I2C_SDA_PIN, I2C_SCL_PIN, ADS1115_I2C_ADDR);
+    }
 
     LCD_RGB_Init();
     Lvgl_Init();
-    ui_init();
+    
     LCD_RGB_BacklightInit();
+    
+    // Initialize screen manager (will set Home as default)
+    ScreenManager_Init();
+    
+    Serial.println("Setup complete - System ready!");
+    Serial.println("Press buttons to test...\n");
 }
 
 void loop()
 {
-    // ========== 1. จำลองข้อมูลให้ทำงานไปเรื่อยๆ (เร็วๆ) ==========
     rpm += 33;
     rpm %= 12300;
 
@@ -73,87 +98,104 @@ void loop()
     tinj += 1;
     tinj %= 150;  
 
-    // ========== 2. อัปเดต UI ทุกๆ 50ms (20 FPS) - ไม่ใช้ Animation แบบตัวอย่าง ==========
     if (millis() - last_ui_update >= UI_UPDATE_INTERVAL) {
         last_ui_update = millis();
 
-        // RPM Label - อัปเดตตรงๆ ไม่ animation
         if (rpm != last_rpm) {
             lv_label_set_text_fmt(ui_Label1, "%d", rpm);
             last_rpm = rpm;
         }
 
-        // Arc + Arrow - คำนวณมุมและตั้งค่าตรงๆ แบบตัวอย่าง
         int16_t angle = (rpm * 2700) / 12000;
         if (angle != last_angle) {
-            // ตรวจสอบว่า delta มากพอจะอัปเดต (แบบตัวอย่าง)
+
             int32_t delta = angle - last_angle;
             if (delta < 0) delta = -delta;
             
-            lv_arc_set_value(ui_Arc1, angle);  // ไม่ animation
+            lv_arc_set_value(ui_Arc1, angle); 
             
-            if (delta >= 5) {  // อัปเดต arrow ถ้าเปลี่ยนแปลงมากพอ
-                lv_image_set_rotation(ui_Image3, angle);  // ไม่ animation
+            if (delta >= 5) { 
+                lv_image_set_rotation(ui_Image3, angle);
             }
             last_angle = angle;
         }
 
-        // Speed
         if (speed != last_speed) {
             lv_label_set_text_fmt(ui_Label7, "%d", speed);
             last_speed = speed;
         }
 
-        // TPS - มีทศนิยม 1 ตำแหน่ง
         if (tps != last_tps) {
             lv_label_set_text_fmt(ui_Label17, "%d.%d", tps / 10, tps % 10);
             last_tps = tps;
         }
 
-        // Tinj - มีทศนิยม 1 ตำแหน่ง
         if (tinj != last_tinj) {
             lv_label_set_text_fmt(ui_Label2, "%d.%d", tinj / 10, tinj % 10);
             last_tinj = tinj;
         }
 
-        // Ignition - มีทศนิยม 1 ตำแหน่ง
         if (ignition != last_ignition) {
-            lv_label_set_text_fmt(ui_Label10, "%d.%d", ignition / 10, ignition % 10);
+            lv_label_set_text_fmt(ui_Label10, "%d.%d", ignition / 10, ignition % 10);  // ไม่ใส่องศาเพราะ font ไม่รองรับ
             last_ignition = ignition;
         }
 
-        // AFR - มีทศนิยม 1 ตำแหน่ง
         if (afr != last_afr) {
             lv_label_set_text_fmt(ui_Label15, "%d.%d", afr / 10, afr % 10);
             last_afr = afr;
         }
 
-        // MAP - มีทศนิยม 1 ตำแหน่ง
         if (map_val != last_map) {
             lv_label_set_text_fmt(ui_Label20, "%d.%d", map_val / 10, map_val % 10);
             last_map = map_val;
         }
 
-        // Inj Duty - integer
         if (inj_duty != last_inj_duty) {
             lv_label_set_text_fmt(ui_Label5, "%d", inj_duty);
             last_inj_duty = inj_duty;
         }
 
-        // Engine Temp - integer
         if (engine_temp != last_engine_temp) {
             lv_label_set_text_fmt(ui_Label22, "%d", engine_temp);
             last_engine_temp = engine_temp;
         }
 
-        // อัปเดต Bar - ใช้ LV_ANIM_OFF เพื่อไม่ให้ LVGL ทำ animation
         lv_bar_set_value(ui_Bar1, (tinj * 100) / 150, LV_ANIM_OFF);
         lv_bar_set_value(ui_Bar2, (ignition * 100) / 600, LV_ANIM_OFF);
         lv_bar_set_value(ui_Bar3, inj_duty, LV_ANIM_OFF);
         lv_bar_set_value(ui_Bar4, (engine_temp * 100) / 120, LV_ANIM_OFF);
     }
 
-    // ========== 3. ให้ LVGL จัดการวาดหน้าจอ (ต้องเรียกบ่อยๆ) ==========
+    static unsigned long last_adc_update = 0;
+    if (adc_initialized && millis() - last_adc_update >= 50) {
+        last_adc_update = millis();
+        ADC_Update();
+    }
+
+    button_status_t btn12 = adc_initialized ? ADC_ReadButton_SW12() : BTN_NONE;
+    button_status_t btn34 = adc_initialized ? ADC_ReadButton_SW34() : BTN_NONE;
+    
+    ScreenManager_HandleButton(btn12, btn34);
+    
+    if (btn12 != last_btn12) {
+        last_btn12 = btn12;
+        if (btn12 != BTN_NONE) {
+            Serial.printf("Button SW1/2: %d\n", btn12);
+        }
+    }
+    
+    if (btn34 != last_btn34) {
+        last_btn34 = btn34;
+        if (btn34 != BTN_NONE) {
+            Serial.printf("Button SW3/4: %d\n", btn34);
+        }
+    }
+    
+    if (adc_initialized && millis() - last_btn_debug_time > 500) {
+        last_btn_debug_time = millis();
+        ADC_PrintButtonStatus();
+    }
+
     lv_timer_handler();
     delay(5);
 }

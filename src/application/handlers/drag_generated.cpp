@@ -1,0 +1,40 @@
+#define ui_dragScreen drag_ui_dragScreen
+#define ui_dragScreen_screen_init drag_ui_dragScreen_screen_init
+#define ui_dragScreen_screen_destroy drag_ui_dragScreen_screen_destroy
+#define ui_Label1 drag_ui_Label1
+#define ui_Label2 drag_ui_Label2
+#define ui_Label3 drag_ui_Label3
+#define ui_Label4 drag_ui_Label4
+#define ui_Label5 drag_ui_Label5
+#define ui_Label6 drag_ui_Label6
+#define ui_Label7 drag_ui_Label7
+#define ui_Label8 drag_ui_Label8
+#define ui_Label9 drag_ui_Label9
+#define ui_Label10 drag_ui_Label10
+#define ui_Label11 drag_ui_Label11
+#define ui_Label13 drag_ui_Label13
+#define ui_Label15 drag_ui_Label15
+#define ui_Label16 drag_ui_Label16
+#define ui_TypeDrag drag_ui_TypeDrag
+#define ui_drag60ft drag_ui_drag60ft
+#define ui_drag330ft drag_ui_drag330ft
+#define ui_drag18mi drag_ui_drag18mi
+#define ui_drag1000ft drag_ui_drag1000ft
+#define ui_drag14 drag_ui_drag14
+#define ui_timeRT drag_ui_timeRT
+#define ui_time60ft drag_ui_time60ft
+#define ui_time330ft drag_ui_time330ft
+#define ui_time18mi drag_ui_time18mi
+#define ui_time1000ft drag_ui_time1000ft
+#define ui_time14 drag_ui_time14
+#define ui_Panel1 drag_ui_Panel1
+#define ui_Panel3 drag_ui_Panel3
+#define ui_Panel4 drag_ui_Panel4
+#define ui_Panel5 drag_ui_Panel5
+#define ui_Panel6 drag_ui_Panel6
+#define ui_Panel7 drag_ui_Panel7
+#define ui_Container2 drag_ui_Container2
+
+extern "C" {
+#include "../ui_dragmode/ui_dragScreen.c"
+}

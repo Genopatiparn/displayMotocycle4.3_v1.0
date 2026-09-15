@@ -42,10 +42,10 @@ extern lv_obj_t * ui_Label19;
 extern lv_obj_t * ui_Label20;
 extern lv_obj_t * ui_Label21;
 extern lv_obj_t * ui_Container7;
-extern lv_obj_t * ui_Label4;
 extern lv_obj_t * ui_Bar2;
 extern lv_obj_t * ui_Label6;
 extern lv_obj_t * ui_Label10;
+extern lv_obj_t * ui_Label23;
 extern lv_obj_t * ui_Container8;
 extern lv_obj_t * ui_Label5;
 extern lv_obj_t * ui_Label8;
@@ -54,6 +54,7 @@ extern lv_obj_t * ui_Label9;
 extern lv_obj_t * ui_Container9;
 extern lv_obj_t * ui_Label22;
 extern lv_obj_t * ui_Bar4;
+extern lv_obj_t * ui_Label25;
 extern lv_obj_t * ui_Label24;
 // CUSTOM VARIABLES
 
