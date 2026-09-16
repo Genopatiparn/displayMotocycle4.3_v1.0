@@ -6,6 +6,7 @@
 #include "adc_button.h"
 #include "screen_manager.h"
 #include "ui_home/ui.h"
+#include "ws2811_control.h"
 
 // ตัวแปรสำหรับจำลองข้อมูล
 uint16_t rpm = 0;
@@ -40,6 +41,9 @@ static button_status_t last_btn34 = BTN_NONE;
 static unsigned long last_btn_debug_time = 0;
 static bool adc_initialized = false;
 
+// ตัวแปรสำหรับ LED control
+bool led_initialized = false;
+
 void setup()
 {
     Serial.begin(115200);
@@ -64,14 +68,29 @@ void setup()
     // Initialize screen manager (will set Home as default)
     ScreenManager_Init();
     
+    // Initialize WS2811 LEDs
+    Serial.println("Initializing WS2811 LEDs...");
+    led_initialized = WS2811_Init();
+    
+    if (led_initialized) {
+        Serial.println("WS2811 initialized successfully");
+        WS2811_Test();
+    } else {
+        Serial.println("WARNING: WS2811 initialization failed!");
+    }
+    
     Serial.println("Setup complete - System ready!");
     Serial.println("Press buttons to test...\n");
 }
 
 void loop()
 {
-    rpm += 33;
-    rpm %= 12300;
+    static unsigned long last_rpm_update = 0;
+    if (millis() - last_rpm_update >= 50) {
+        last_rpm_update = millis();
+        rpm += 33;
+        rpm %= 12000;
+    }
 
     speed += 3;
     speed %= 200;
@@ -100,6 +119,11 @@ void loop()
 
     if (millis() - last_ui_update >= UI_UPDATE_INTERVAL) {
         last_ui_update = millis();
+
+        // Update WS2811 LEDs - แสดง RPM เท่านั้น
+        if (led_initialized) {
+            WS2811_ShowRPM(rpm, 12000);
+        }
 
         if (rpm != last_rpm) {
             lv_label_set_text_fmt(ui_Label1, "%d", rpm);
