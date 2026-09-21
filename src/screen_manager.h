@@ -18,9 +18,12 @@ typedef enum {
 // Menu items
 typedef enum {
     MENU_ITEM_DISPLAY = 0,
+    MENU_ITEM_ARTBOARD_4,
     MENU_ITEM_DRAG,
-    MENU_ITEM_RADAR,
+    MENU_ITEM_ARTBOARD_3,
+    MENU_ITEM_ARTBOARD_5,
     MENU_ITEM_SETTING,
+    MENU_ITEM_RADAR,
     MENU_ITEM_MAX
 } menu_item_t;
 

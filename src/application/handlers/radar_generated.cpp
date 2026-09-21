@@ -2,6 +2,12 @@
 #define ui_Screen1_screen_init radar_ui_Screen1_screen_init
 #define ui_Screen1_screen_destroy radar_ui_Screen1_screen_destroy
 #define ui_Image1 radar_ui_Image1
+#define ui_Image3 radar_ui_Image3
+#define ui_Bar1 radar_ui_Bar1
+#define ui_Bar2 radar_ui_Bar2
+#define ui_Bar3 radar_ui_Bar3
+#define ui_Bar4 radar_ui_Bar4
+#define ui_Bar5 radar_ui_Bar5
 #define ui_Label1 radar_ui_Label1
 #define ui_Label2 radar_ui_Label2
 #define ui_Label3 radar_ui_Label3

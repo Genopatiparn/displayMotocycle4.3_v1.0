@@ -40,11 +40,6 @@ namespace generated_font_nexab20 {
 #include "../ui_dragmode/ui_font_NexaB20.c"
 #undef ui_font_NexaB20
 }
-namespace generated_font_nexab25 {
-#define ui_font_NexaB25 generated_font_NexaB25
-#include "../ui_radarmode/ui_font_NexaB25.c"
-#undef ui_font_NexaB25
-}
 namespace generated_font_nexab30 {
 #define ui_font_NexaB30 generated_font_NexaB30
 #include "../ui_dragmode/ui_font_NexaB30.c"
@@ -70,7 +65,6 @@ extern const lv_font_t ui_font_Antonio60 = generated_font_antonio60::generated_f
 extern const lv_font_t ui_font_NexaB10 = generated_font_nexab10::generated_font_NexaB10;
 extern const lv_font_t ui_font_NexaB15 = generated_font_nexab15::generated_font_NexaB15;
 extern const lv_font_t ui_font_NexaB20 = generated_font_nexab20::generated_font_NexaB20;
-extern const lv_font_t ui_font_NexaB25 = generated_font_nexab25::generated_font_NexaB25;
 extern const lv_font_t ui_font_NexaB30 = generated_font_nexab30::generated_font_NexaB30;
 extern const lv_font_t ui_font_NexaB50 = generated_font_nexab50::generated_font_NexaB50;
 extern const lv_font_t ui_font_NexaB70 = generated_font_nexab70::generated_font_NexaB70;

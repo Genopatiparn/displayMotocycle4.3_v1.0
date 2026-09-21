@@ -66,9 +66,16 @@ void ScreenManager_MenuHighlight(menu_item_t item)
 {
     if (item >= MENU_ITEM_MAX) return;
     for (uint8_t i = 0; i < MENU_ITEM_MAX; i++) {
-        if (menu_icons[i]) lv_obj_set_style_opa(menu_icons[i], LV_OPA_50, 0);
+        if (menu_icons[i]) {
+            lv_obj_set_style_opa(menu_icons[i], LV_OPA_50, 0);
+            lv_obj_set_style_image_recolor_opa(menu_icons[i], LV_OPA_TRANSP, 0);
+        }
     }
-    if (menu_icons[item]) lv_obj_set_style_opa(menu_icons[item], LV_OPA_100, 0);
+    if (menu_icons[item]) {
+        lv_obj_set_style_opa(menu_icons[item], LV_OPA_100, 0);
+        lv_obj_set_style_image_recolor(menu_icons[item], lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_image_recolor_opa(menu_icons[item], LV_OPA_100, 0);
+    }
     selected_menu_item = item;
 }
 
@@ -101,7 +108,7 @@ void ScreenManager_HandleButton(button_status_t btn12, button_status_t btn34)
     }
 
     if (current_screen == SCREEN_HOME) {
-        if (btn12_edge == BTN_SW1) ScreenManager_SwitchTo(SCREEN_MENU);
+        if (btn34_edge == BTN_SW3) ScreenManager_SwitchTo(SCREEN_MENU);
     } else if (current_screen == SCREEN_MENU) {
         if (btn12_edge == BTN_SW1) {
              selected_menu_item = (menu_item_t)((selected_menu_item + 1) % MENU_ITEM_MAX);

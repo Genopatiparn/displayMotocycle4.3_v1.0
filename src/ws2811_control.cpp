@@ -11,6 +11,7 @@ static unsigned long last_blink_time = 0;
 static bool blink_state = false;
 static uint8_t last_num_lit = 0;
 static bool last_was_warning = false;
+static uint8_t brightness = 2;
 
 bool WS2811_Init(void) {
     if (strip != nullptr) {
@@ -27,7 +28,7 @@ bool WS2811_Init(void) {
     strip->begin();
     #include "driver/gpio.h"
     gpio_set_drive_capability((gpio_num_t)WS2811_PIN, GPIO_DRIVE_CAP_3);
-    strip->setBrightness(2);
+    strip->setBrightness(brightness);
     strip->show(); // Initialize all pixels to 'off'
 
     last_blink_time = millis();
@@ -37,6 +38,13 @@ bool WS2811_Init(void) {
 
     Serial.printf("WS2811 initialized: %d LEDs on GPIO%d\n", WS2811_NUM_LEDS, WS2811_PIN);
     return true;
+}
+
+void WS2811_SetBrightness(uint8_t value) {
+    brightness = value;
+    if (strip != nullptr) {
+        strip->setBrightness(brightness);
+    }
 }
 
 void WS2811_ShowRPM(uint16_t rpm, uint16_t max_rpm) {

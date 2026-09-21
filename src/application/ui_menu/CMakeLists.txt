@@ -2,10 +2,22 @@ SET(SOURCES ui_Screen1.c
     ui.c
     ui_comp_hook.c
     ui_helpers.c
-    ui_img_background_menu_png.c
+    ui_img_background_png.c
+    ui_img_gps_status_0_png.c
     ui_img_display_png.c
+    ui_img_artboard_4_png.c
     ui_img_drag_png.c
+    ui_img_artboard_3_png.c
+    ui_img_artboard_5_png.c
     ui_img_gps_png.c
-    ui_img_setting_png.c)
+    ui_img_setting_png.c
+    fonts/ui_font_Antonio10.c
+    fonts/ui_font_Antonio16.c
+    fonts/ui_font_Antonio30.c
+    fonts/ui_font_Antonio40.c
+    fonts/ui_font_Antonio60.c
+    fonts/ui_font_NexaB10.c
+    fonts/ui_font_NexaB15.c
+    fonts/ui_font_NexaB20.c)
 
 add_library(ui ${SOURCES})

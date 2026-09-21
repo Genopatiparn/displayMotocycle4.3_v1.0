@@ -25,6 +25,12 @@ extern "C" {
 bool WS2811_Init(void);
 
 /**
+ * @brief Set the LED brightness level.
+ * @param brightness Brightness from 0..255.
+ */
+void WS2811_SetBrightness(uint8_t brightness);
+
+/**
  * @brief Show RPM on LEDs as bar graph with shift light
  * @param rpm Current RPM value
  * @param max_rpm Maximum RPM value (shift light at 95%)
