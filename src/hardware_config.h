@@ -25,11 +25,10 @@
 // #define RACE_PANEL_BAUD_RATE 115200
 // #define RACE_PANEL_BUF_SIZE  128
 
-// GPS UART1 (NMEA) — dedicated hardware UART on IO43/IO44
 #define GPS_UART_NUM       UART_NUM_1
-#define GPS_TX_PIN         (GPIO_NUM_43)
-#define GPS_RX_PIN         (GPIO_NUM_44)
-#define GPS_BAUD_RATE      230400
+#define GPS_TX_PIN         (GPIO_NUM_16)  // ESP32 TX → GPS RXD
+#define GPS_RX_PIN         (GPIO_NUM_15)  // ESP32 RX ← GPS TXD
+#define GPS_BAUD_RATE      115200          // High-speed baud rate for UBX protocol (saved to flash)
 #define GPS_RX_BUF_SIZE    2048
 
 // K-Line (ISO 9141-2 / KWP2000) — UART2

@@ -15,6 +15,9 @@ const uint8_t cmd_20[7] = {0x72, 0x07, 0x72, 0x20, 0x00, 0x02, 0xF3};
 
 KLineData latest_data = {0, -40, 0, 0, 0, 147, 0, 0, 0, 0};
 
+// Mutex for protecting latest_data from concurrent access (Core 0 writes, Core 1 reads)
+static portMUX_TYPE kline_mux = portMUX_INITIALIZER_UNLOCKED;
+
 uint8_t match_len_11 = 0;
 uint8_t match_len_20 = 0;
 uint8_t response[32] = {};
@@ -67,11 +70,13 @@ void capture_response_byte(uint8_t value) {
         // ==========================================
         if (current_command == 0x11 && expected_length >= 26) {
             
+            // Lock before writing to shared data (Core 0 writes)
+            portENTER_CRITICAL(&kline_mux);
+            
             latest_data.rpm = (static_cast<uint16_t>(response[5]) << 8) | response[6]; // ไบต์ 5, 6
             latest_data.tps = response[8] / 0.18;             // ไบต์ 8
             latest_data.engine_temp = response[10];           // ไบต์ 10
             latest_data.map = response[14] / 0.103;           // ไบต์ 14
-            latest_data.batt_v = response[17] * 10;           // ไบต์ 17
             latest_data.speed = response[18];                 // ไบต์ 18
             
             // เวลาฉีด (T.inj): ไบต์ 19, 20
@@ -88,9 +93,13 @@ void capture_response_byte(uint8_t value) {
             } else {
                 latest_data.inj_duty = 0;
             }
+            
+            portEXIT_CRITICAL(&kline_mux);
         }
         else if (current_command == 0x20 && expected_length >= 8) {
+            portENTER_CRITICAL(&kline_mux);
             latest_data.afr = 211 - (response[5] * 2); // ไบต์ 5 ถอดรหัส AFR
+            portEXIT_CRITICAL(&kline_mux);
         }
     }
     reset_response_capture();

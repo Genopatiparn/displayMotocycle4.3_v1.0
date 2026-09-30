@@ -1,3 +1,5 @@
+// Map ui_xxx → radar_ui_xxx BEFORE including ui_Screen1.c
+// This makes ui_Screen1.c declare radar_ui_xxx variables instead of ui_xxx
 #define ui_Screen1 radar_ui_Screen1
 #define ui_Screen1_screen_init radar_ui_Screen1_screen_init
 #define ui_Screen1_screen_destroy radar_ui_Screen1_screen_destroy

@@ -9,6 +9,7 @@ extern "C" {
 
 void RadarScreenHandler_Init(void);
 lv_obj_t *RadarScreenHandler_GetScreen(void);
+void RadarScreenHandler_UpdateGPS(void);
 
 #ifdef __cplusplus
 }

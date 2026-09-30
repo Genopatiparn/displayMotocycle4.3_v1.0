@@ -8,19 +8,34 @@ static int16_t switch_raw[2] = {0, 0};
 static bool adc_ready = false;
 static constexpr float ADC_MV_PER_BIT = 0.1875f;
 
+// Button debounce
+static button_status_t last_sw12 = BTN_NONE;
+static button_status_t last_sw34 = BTN_NONE;
+static uint32_t last_sw12_change = 0;
+static uint32_t last_sw34_change = 0;
+static constexpr uint32_t DEBOUNCE_MS = 50;  // 50ms debounce
+
 static button_status_t buttonFromVoltage(float voltage_mV,
                                          button_status_t firstButton,
                                          button_status_t secondButton,
                                          button_status_t bothButtons)
 {
-    // Released is near the pull-up voltage. Lower ranges are switch levels.
-    if (voltage_mV < 3800.0f) {
-        return firstButton;
+    // Voltage thresholds based on field measurements:
+    // SW3+SW4 (both): ~3588mV (lowest)
+    // SW3 alone:      ~3739mV 
+    // SW4 alone:      ~4406mV
+    // NONE (idle):    ~4945mV (VCC/pull-up)
+    
+    if (voltage_mV < 3650.0f) {
+        return bothButtons;  // SW3+SW4 (~3588mV)
+    }
+    if (voltage_mV < 4050.0f) {
+        return firstButton;  // SW3 alone (~3739mV)
     }
     if (voltage_mV < 4700.0f) {
-        return secondButton;
+        return secondButton;  // SW4 alone (~4406mV)
     }
-    return voltage_mV < 5200.0f ? BTN_NONE : bothButtons;
+    return BTN_NONE;  // >= 4700mV (~4945mV)
 }
 
 bool ADC_Button_Init(void)
@@ -69,14 +84,41 @@ float ADC_ReadVoltage_mV(uint8_t channel)
 
 button_status_t ADC_ReadButton_SW12(void)
 {
-    return buttonFromVoltage(ADC_ReadVoltage_mV(ADS1115_CH_SW1),
-                             BTN_SW1, BTN_SW2, BTN_SW1_SW2);
+    button_status_t current = buttonFromVoltage(ADC_ReadVoltage_mV(ADS1115_CH_SW1),
+                                                BTN_SW1, BTN_SW2, BTN_SW1_SW2);
+    
+    // Debounce: only update if stable for DEBOUNCE_MS
+    uint32_t now = millis();
+    if (current != last_sw12) {
+        if (now - last_sw12_change > DEBOUNCE_MS) {
+            last_sw12 = current;
+            last_sw12_change = now;
+        }
+    } else {
+        last_sw12_change = now;
+    }
+    
+    return last_sw12;
 }
 
 button_status_t ADC_ReadButton_SW34(void)
 {
-    return buttonFromVoltage(ADC_ReadVoltage_mV(ADS1115_CH_SW2),
-                             BTN_SW3, BTN_SW4, BTN_SW3_SW4);
+    float voltage = ADC_ReadVoltage_mV(ADS1115_CH_SW2);
+    button_status_t current = buttonFromVoltage(voltage,
+                                                BTN_SW3, BTN_SW4, BTN_SW3_SW4);
+    
+    // Debounce: only update if stable for DEBOUNCE_MS
+    uint32_t now = millis();
+    if (current != last_sw34) {
+        if (now - last_sw34_change > DEBOUNCE_MS) {
+            last_sw34 = current;
+            last_sw34_change = now;
+        }
+    } else {
+        last_sw34_change = now;
+    }
+    
+    return last_sw34;
 }
 
 void ADC_PrintButtonStatus(void)
