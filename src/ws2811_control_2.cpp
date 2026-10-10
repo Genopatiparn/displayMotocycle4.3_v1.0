@@ -6,7 +6,7 @@ static unsigned long last_blink_time = 0;
 static bool blink_state = false;
 static uint8_t last_num_lit = 0;
 static bool last_was_warning = false;
-static uint8_t brightness = 2;
+static uint8_t brightness = 255;
 
 static RgbColor BrightColor(uint8_t red, uint8_t green, uint8_t blue) {
     return RgbColor(
@@ -39,30 +39,44 @@ void WS2811_SetBrightness(uint8_t value) {
 }
 
 void WS2811_Test(void) {
-    static const RgbColor test_colors[WS2811_NUM_LEDS] = {
-        RgbColor(255, 0, 0),
-        RgbColor(255, 127, 0),
-        RgbColor(255, 255, 0),
-        RgbColor(127, 255, 0),
-        RgbColor(0, 255, 0),
-        RgbColor(0, 255, 255),
-        RgbColor(0, 127, 255),
-        RgbColor(0, 0, 255),
-        RgbColor(127, 0, 255),
-        RgbColor(255, 0, 255)
+    static const RgbColor rpm_colors[WS2811_NUM_LEDS] = {
+        RgbColor(255, 0, 0), RgbColor(255, 127, 0),
+        RgbColor(255, 255, 0), RgbColor(127, 255, 0),
+        RgbColor(0, 255, 0), RgbColor(0, 255, 255),
+        RgbColor(0, 127, 255), RgbColor(0, 0, 255),
+        RgbColor(127, 0, 255), RgbColor(255, 0, 255)
     };
 
     if (strip == nullptr) {
         return;
     }
 
-    for (uint8_t i = 0; i < WS2811_NUM_LEDS; ++i) {
-        strip->SetPixelColor(i, BrightColor(
-            test_colors[i].R,
-            test_colors[i].G,
-            test_colors[i].B));
+    for (uint8_t cycle = 0; cycle < 3; ++cycle) {
+        for (uint8_t offset = 0; offset < WS2811_NUM_LEDS; ++offset) {
+            for (uint8_t led = 0; led < WS2811_NUM_LEDS; ++led) {
+                const uint8_t color_index = (led + offset) % WS2811_NUM_LEDS;
+                const RgbColor color = rpm_colors[color_index];
+                strip->SetPixelColor(led, BrightColor(color.R, color.G, color.B));
+            }
+            strip->Show();
+            delay(80);
+        }
+
+        for (int8_t offset = WS2811_NUM_LEDS - 2; offset > 0; --offset) {
+            for (uint8_t led = 0; led < WS2811_NUM_LEDS; ++led) {
+                const uint8_t color_index = (led + offset) % WS2811_NUM_LEDS;
+                const RgbColor color = rpm_colors[color_index];
+                strip->SetPixelColor(led, BrightColor(color.R, color.G, color.B));
+            }
+            strip->Show();
+            delay(80);
+        }
     }
+
+    strip->ClearTo(RgbColor(0, 0, 0));
     strip->Show();
+    last_num_lit = 0;
+    last_was_warning = false;
 }
 
 void WS2811_ShowRPM(uint16_t rpm, uint16_t max_rpm) {
@@ -70,8 +84,7 @@ void WS2811_ShowRPM(uint16_t rpm, uint16_t max_rpm) {
         return;
     }
 
-    constexpr uint16_t first_led_rpm = 2;
-    constexpr uint16_t last_led_rpm = 10000;
+    constexpr uint16_t rpm_per_led = 1000;
     constexpr uint16_t warning_rpm = 11000;
 
     if (rpm > warning_rpm) {
@@ -92,13 +105,9 @@ void WS2811_ShowRPM(uint16_t rpm, uint16_t max_rpm) {
         return;
     }
 
-    uint8_t num_lit = 0;
-    if (rpm >= first_led_rpm) {
-        const uint32_t range = last_led_rpm - first_led_rpm;
-        num_lit = 1 + static_cast<uint8_t>(((rpm - first_led_rpm) * (WS2811_NUM_LEDS - 1)) / range);
-        if (rpm >= last_led_rpm) {
-            num_lit = WS2811_NUM_LEDS;
-        }
+    uint8_t num_lit = static_cast<uint8_t>(rpm / rpm_per_led);
+    if (num_lit > WS2811_NUM_LEDS) {
+        num_lit = WS2811_NUM_LEDS;
     }
 
     if (num_lit == last_num_lit && !last_was_warning) {

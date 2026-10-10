@@ -14,7 +14,6 @@
 
 void UIRadarMode_GPS_Init(void) {
     // Nothing to initialize yet
-    Serial.println("[UI RadarMode] GPS display initialized");
 }
 
 void UIRadarMode_GPS_Update(void) {
@@ -22,7 +21,6 @@ void UIRadarMode_GPS_Update(void) {
     if (!ui_Label5 || !ui_Label6) {
         static bool warned = false;
         if (!warned) {
-            Serial.println("[RADAR-GPS] ERROR: ui_Label5 or ui_Label6 is NULL!");
             warned = true;
         }
         return;

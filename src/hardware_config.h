@@ -116,8 +116,8 @@
 #define LCD_HEIGHT      272  // logical landscape height (used by LVGL / application)
 #define LCD_COLOR_DEPTH 16   // RGB565 — also used as data_width for esp_lcd_rgb_panel
 
-// ==================== LCD Timing (RGB 565 Parallel @ 9 MHz) ====================
-#define LCD_PCLK_HZ         (9 * 1000 * 1000)
+// ==================== LCD Timing (RGB 565 Parallel @ 20 MHz - MAXIMUM SPEED) ====================
+#define LCD_PCLK_HZ         (20 * 1000 * 1000)  // เพิ่มเป็น 20 MHz สูงสุด!
 #define LCD_HPW             2    // HSYNC pulse width (pixels)
 #define LCD_HBP             46   // horizontal back porch
 #define LCD_HFP             16   // horizontal front porch

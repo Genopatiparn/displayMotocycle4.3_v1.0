@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define KLINE_MODE 0
+#define KLINE_MODE 3 
 
 struct KLineData {
     uint16_t rpm;          // รอบเครื่อง
@@ -17,8 +17,16 @@ struct KLineData {
     uint16_t inj_duty;     // ภาระหัวฉีด (0-100%) 
 };
 
+// ฟังก์ชันหลัก
 void KLine_Init(void);
 void KLine_Poll(void);
 KLineData KLine_GetData(void);
+
+// ฟังก์ชัน Handshake (ปลุก ECU)
+bool KLine_SendHandshake(void);
+
+// ตัวแปรควบคุม Handshake (เปิด/ปิดได้)
+extern bool kline_use_handshake;  // true = เปิดใช้ Handshake ก่อนสื่อสาร
+extern bool kline_handshake_done; // ตรวจสอบว่าทำ Handshake แล้วหรือยัง
 
 #endif

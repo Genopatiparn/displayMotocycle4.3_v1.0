@@ -12,6 +12,9 @@
 #include "application/handlers/radar_screen_handler.h"
 #include "application/handlers/menu_screen_handler.h"
 
+extern bool kline_use_handshake;
+extern bool kline_handshake_done;
+
 uint16_t rpm = 0;
 uint16_t speed = 0;
 uint16_t afr = 147;
@@ -44,14 +47,24 @@ bool led_initialized = false;
 
 // GPS variables
 static bool gps_initialized = false;
-static unsigned long last_gps_print = 0;
 
 TaskHandle_t KLineTask;
+static bool kline_task_init_done = false;
 
 void KLineTaskCode(void * pvParameters) {
-    for(;;) {
-        KLine_Poll(); 
-        vTaskDelay(10 / portTICK_PERIOD_MS);  // 10ms delay to prevent watchdog
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
+    KLine_Init();
+    kline_task_init_done = true;
+
+    for (;;) {
+        if (kline_handshake_done) {
+            KLine_Poll();
+        } else {
+            vTaskDelay(2000 / portTICK_PERIOD_MS);
+            KLine_Init();
+        }
+        vTaskDelay(5 / portTICK_PERIOD_MS);
     }
 }
 
@@ -68,47 +81,40 @@ void GPSTaskCode(void * pvParameters) {
 void setup()
 {
     Serial.begin(115200);
-    delay(2000);
-    Serial.println("\n\n=== ESP32-S3 Motorcycle Display ===");
 
-    adc_initialized = ADC_Button_Init();
-    
+    // ========== CRITICAL: จอติดก่อน! ==========
     LCD_RGB_Init();
     Lvgl_Init();
     LCD_RGB_BacklightInit();
-
-    KLine_Init();
     ScreenManager_Init();
+
+    adc_initialized = ADC_Button_Init();
     
     led_initialized = WS2811_Init();
-    if (led_initialized) {
-        WS2811_Test();
-    }
 
-    Serial.println("Initializing GPS SR1723...");
-    GPS_Init();  // Already calls GPS_ConfigurePureUBX() inside
+    kline_use_handshake = true;
+
+    GPS_Init();
     gps_initialized = true;
-    Serial.println("GPS initialized - waiting for satellite lock...");
 
-    // Create K-Line Task on Core 0 with Priority 2 (higher)
     xTaskCreatePinnedToCore(
         KLineTaskCode,   
         "KLineTask",     
-        4096,            
+        8192,            //
         NULL,            
-        2,               // Priority 2 (higher than GPS)
+        3,               
         &KLineTask,      
         0);              
     
-    // Create GPS Task on Core 0 with Priority 1 (lower than K-Line)
     xTaskCreatePinnedToCore(
         GPSTaskCode,
         "GPSTask",
         4096,
         NULL,
-        1,               // Priority 1 (lower than K-Line)
+        1,
         NULL,
-        0);              
+        0);
+
 }
 
 void loop()
@@ -122,8 +128,7 @@ void loop()
     tinj = data.tinj;
     afr = data.afr;
     speed = data.speed;
-    
-    // ดึงค่า inj_duty ที่คำนวณอย่างแม่นยำมาจาก K-Line โดยตรง!
+  
     inj_duty = data.inj_duty;
 
     if (millis() - last_ui_update >= UI_UPDATE_INTERVAL) {
@@ -210,9 +215,6 @@ void loop()
     if (btn12 != last_logged_btn12 || btn34 != last_logged_btn34) {
         last_logged_btn12 = btn12;
         last_logged_btn34 = btn34;
-        Serial.printf("[BUTTON] SW12=%d (%.1fmV), SW34=%d (%.1fmV)\n",
-                      btn12, ADC_ReadVoltage_mV(ADS1115_CH_SW1),
-                      btn34, ADC_ReadVoltage_mV(ADS1115_CH_SW2));
     }
 
     // GPS UI updates (GPS_ProcessIncoming now runs in separate task)
@@ -230,24 +232,6 @@ void loop()
             }
         }
         
-        // Print GPS status every 5 seconds
-        if (millis() - last_gps_print >= 5000) {
-            last_gps_print = millis();
-            
-            if (GPS_HasFix()) {
-                gps_debug_info_t gps_info;
-                GPS_GetDebugInfo(&gps_info);
-                uint8_t sats = GPS_GetSatellites();
-                uint8_t visible = GPS_GetVisibleSatellites();
-                Serial.printf("[GPS] FIX   | Pos: %s,%s | Speed: %s km/h | Time: %s | Sats: %d/%d | %s\n",
-                              gps_info.lat, gps_info.lon, gps_info.speed_kmh, 
-                              gps_info.utc_time, sats, visible, GPS_GetQualityStatus());
-            } else {
-                uint8_t visible = GPS_GetVisibleSatellites();
-                Serial.printf("[GPS] NO FIX | Visible satellites: %d | Status: %s\n", 
-                              visible, GPS_GetQualityStatus());
-            }
-        }
     }
 
     lv_timer_handler();

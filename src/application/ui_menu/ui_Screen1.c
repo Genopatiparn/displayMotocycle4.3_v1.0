@@ -99,7 +99,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_width(ui_Image9, LV_SIZE_CONTENT);   /// 61
     lv_obj_set_height(ui_Image9, LV_SIZE_CONTENT);    /// 61
     lv_obj_set_x(ui_Image9, -111);
-    lv_obj_set_y(ui_Image9, 58);
+    lv_obj_set_y(ui_Image9, 55);
     lv_obj_set_align(ui_Image9, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_Image9, LV_OBJ_FLAG_CLICKABLE);     /// Flags
     lv_obj_remove_flag(ui_Image9, LV_OBJ_FLAG_SCROLLABLE);      /// Flags

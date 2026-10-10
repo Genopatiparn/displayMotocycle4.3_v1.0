@@ -21,7 +21,6 @@ bool WS2811_Init(void) {
     strip = new Adafruit_NeoPixel(WS2811_NUM_LEDS, WS2811_PIN, NEO_RGB + NEO_KHZ400);
     
     if (strip == nullptr) {
-        Serial.println("Failed to create WS2811 strip object");
         return false;
     }
 
@@ -36,7 +35,6 @@ bool WS2811_Init(void) {
     last_num_lit = 0;
     last_was_warning = false;
 
-    Serial.printf("WS2811 initialized: %d LEDs on GPIO%d\n", WS2811_NUM_LEDS, WS2811_PIN);
     return true;
 }
 
@@ -121,49 +119,3 @@ void WS2811_ShowRPM(uint16_t rpm, uint16_t max_rpm) {
     last_was_warning = false;
 }
 
-void WS2811_Test(void) {
-    const uint8_t spectrum[WS2811_NUM_LEDS][3] = {
-     //  [ R, G, B]
-        {255, 0, 0},
-        {255, 127, 0},
-        {255, 255, 0},
-        {127, 255, 0},
-        {0, 255, 0},
-        {0, 255, 255},
-        {0, 127, 255},
-        {0, 0, 255},
-        {127, 0, 255},
-        {255, 0, 255}
-    };
-
-    for (uint8_t cycle = 0; cycle < 3; cycle++) {
-        for (int8_t offset = 0; offset < WS2811_NUM_LEDS; offset++) {
-            for (uint8_t led = 0; led < WS2811_NUM_LEDS; led++) {
-                uint8_t color_index = (led + offset) % WS2811_NUM_LEDS;
-                strip->setPixelColor(led, strip->Color(
-                    spectrum[color_index][0],
-                    spectrum[color_index][1],
-                    spectrum[color_index][2]));
-            }
-            strip->show();
-            delay(80);
-        }
-
-        for (int8_t offset = WS2811_NUM_LEDS - 2; offset > 0; offset--) {
-            for (uint8_t led = 0; led < WS2811_NUM_LEDS; led++) {
-                uint8_t color_index = (led + offset) % WS2811_NUM_LEDS;
-                strip->setPixelColor(led, strip->Color(
-                    spectrum[color_index][0],
-                    spectrum[color_index][1],
-                    spectrum[color_index][2]));
-            }
-            strip->show();
-            delay(80);
-        }
-    }
-
-    for (uint8_t i = 0; i < WS2811_NUM_LEDS; i++) {
-        strip->setPixelColor(i, strip->Color(0, 0, 0));
-    }
-    strip->show();
-}

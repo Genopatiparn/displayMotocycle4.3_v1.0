@@ -18,6 +18,7 @@ static uint8_t btn34_stable_count = 0;
 static const uint16_t BUTTON_DEBOUNCE_MS = 100;
 static const uint8_t BUTTON_STABLE_COUNT = 1;
 static lv_obj_t *menu_icons[MENU_ITEM_MAX];
+
 void ScreenManager_Init(void)
 {
     HomeScreenHandler_Init();
@@ -65,17 +66,22 @@ screen_type_t ScreenManager_GetCurrentScreen(void)
 void ScreenManager_MenuHighlight(menu_item_t item)
 {
     if (item >= MENU_ITEM_MAX) return;
+    
+    // Set all icons to dim (50% opacity), no tint
     for (uint8_t i = 0; i < MENU_ITEM_MAX; i++) {
         if (menu_icons[i]) {
             lv_obj_set_style_opa(menu_icons[i], LV_OPA_50, 0);
             lv_obj_set_style_image_recolor_opa(menu_icons[i], LV_OPA_TRANSP, 0);
         }
     }
+    
+    // Highlight selected icon with 100% opacity + red tint
     if (menu_icons[item]) {
         lv_obj_set_style_opa(menu_icons[item], LV_OPA_100, 0);
+        lv_obj_set_style_image_recolor_opa(menu_icons[item], LV_OPA_80, 0);
         lv_obj_set_style_image_recolor(menu_icons[item], lv_color_hex(0xFF0000), 0);
-        lv_obj_set_style_image_recolor_opa(menu_icons[item], LV_OPA_100, 0);
     }
+    
     selected_menu_item = item;
 }
 

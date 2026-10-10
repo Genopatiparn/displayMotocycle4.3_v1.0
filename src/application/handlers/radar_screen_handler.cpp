@@ -305,28 +305,6 @@ void RadarScreenHandler_UpdateGPS(void)
         }
     }
 
-    gps_debug_info_t gps_info;
-    GPS_GetDebugInfo(&gps_info);
-    
-
-    Serial.printf(" Status      : %-40s\n", quality);
-    Serial.printf(" Satellites  : %s in use / %s visible%-18s\n", 
-                  gps_info.num_sats, gps_info.total_sats, "");
-
-    
-    if (GPS_HasFix()) {
-        Serial.printf(" Latitude    : %-40s\n", gps_info.lat);
-        Serial.printf(" Longitude   : %-40s\n", gps_info.lon);
-        Serial.printf(" Altitude    : %s m%-36s\n", gps_info.altitude_m, "");
-        Serial.printf(" Speed       : %s km/h%-32s\n", gps_info.speed_kmh, "");
-        Serial.printf(" UTC Time    : %s%-36s\n", gps_info.utc_time, "");
-        Serial.printf(" UTC Date    : %s%-36s\n", gps_info.utc_date, "");
-    } else {
-        Serial.println(" Position    : No GPS Fix - Waiting for signal...     ");
-    }
-    
-    Serial.printf("Satellites Visible: %-34d\n", visible_count);
-
     if (visible_count != displayed_satellite_count) {
         create_dynamic_bars(visible_count);
         displayed_satellite_count = visible_count;

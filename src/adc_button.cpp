@@ -19,23 +19,17 @@ static button_status_t buttonFromVoltage(float voltage_mV,
                                          button_status_t firstButton,
                                          button_status_t secondButton,
                                          button_status_t bothButtons)
-{
-    // Voltage thresholds based on field measurements:
-    // SW3+SW4 (both): ~3588mV (lowest)
-    // SW3 alone:      ~3739mV 
-    // SW4 alone:      ~4406mV
-    // NONE (idle):    ~4945mV (VCC/pull-up)
-    
-    if (voltage_mV < 3650.0f) {
-        return bothButtons;  // SW3+SW4 (~3588mV)
+{    
+    if (voltage_mV < 3500.0f) {
+        return bothButtons;  
     }
     if (voltage_mV < 4050.0f) {
-        return firstButton;  // SW3 alone (~3739mV)
+        return firstButton; 
     }
     if (voltage_mV < 4700.0f) {
-        return secondButton;  // SW4 alone (~4406mV)
+        return secondButton;  
     }
-    return BTN_NONE;  // >= 4700mV (~4945mV)
+    return BTN_NONE;  
 }
 
 bool ADC_Button_Init(void)
@@ -43,7 +37,6 @@ bool ADC_Button_Init(void)
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQ_HZ);
 
     if (!ads.begin(ADS1115_I2C_ADDR, &Wire)) {
-        Serial.println("ADS1115 not found");
         return false;
     }
 
@@ -123,7 +116,4 @@ button_status_t ADC_ReadButton_SW34(void)
 
 void ADC_PrintButtonStatus(void)
 {
-    Serial.printf("ADC: SW1=%.1fmV [%d], SW2=%.1fmV [%d]\n",
-                  ADC_ReadVoltage_mV(ADS1115_CH_SW1), ADC_ReadButton_SW12(),
-                  ADC_ReadVoltage_mV(ADS1115_CH_SW2), ADC_ReadButton_SW34());
 }

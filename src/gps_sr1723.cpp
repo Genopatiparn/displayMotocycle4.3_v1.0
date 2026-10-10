@@ -41,9 +41,6 @@ static uint8_t s_ubx_payload[1024];
 static uint8_t s_ubx_ck_a = 0;
 static uint8_t s_ubx_ck_b = 0;
 
-static uint32_t s_nav_pvt_count = 0;
-static uint32_t s_nav_sat_count = 0;
-
 // Helper functions for Little-Endian parsing
 static inline uint16_t read_u16_le(const uint8_t *buf) {
     return (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
@@ -67,31 +64,6 @@ static inline int32_t read_i32_le(const uint8_t *buf) {
 // ---------------------------------------------------------
 
 static void gps_parse_ubx_nav_pvt(const uint8_t *payload, uint16_t length) {
-    s_nav_pvt_count++;  
-    
-    // --- [GPS Update Rate Measurement] ---
-    static uint32_t last_pvt_time = 0;
-    static uint32_t pvt_interval_sum = 0;
-    static uint16_t pvt_sample_count = 0;
-    
-    uint32_t current_time = millis();  
-    
-    if (last_pvt_time > 0) {
-        uint32_t interval = current_time - last_pvt_time;
-        pvt_interval_sum += interval;
-        pvt_sample_count++;
-        
-        if (pvt_sample_count >= 10) {
-            float avg_interval = (float)pvt_interval_sum / pvt_sample_count;
-            float current_hz = 1000.0f / avg_interval;  
-            
-            Serial.printf("[GPS-RATE] Update rate: %.2f Hz (avg interval: %.1f ms)\n", current_hz, avg_interval);
-            
-            pvt_interval_sum = 0;
-            pvt_sample_count = 0;
-        }
-    }
-    last_pvt_time = current_time;
     if (length < 92) return;  
     
     // Parse time/date
@@ -163,14 +135,6 @@ static void gps_parse_ubx_nav_pvt(const uint8_t *payload, uint16_t length) {
     
     taskEXIT_CRITICAL(&s_gps_data_lock);
     
-    // Debug log
-    static uint32_t last_log = 0;
-    uint32_t now = millis();
-    if (now - last_log > 3000) {
-        Serial.printf("[UBX-NAV-PVT] Fix:%s | Sats:%u | Lat:%.6f Lon:%.6f | Alt:%.1fm | Speed:%.1fkm/h | hAcc:%.2fm\n",
-                      fix_valid ? "OK" : "NO", num_sv, latitude, longitude, altitude, speed_kmh, h_acc / 1000.0f);
-        last_log = now;
-    }
 }
 
 static uint8_t ubx_gnss_id_to_constellation(uint8_t gnss_id) {
@@ -186,7 +150,6 @@ static uint8_t ubx_gnss_id_to_constellation(uint8_t gnss_id) {
 }
 
 static void gps_parse_ubx_nav_sat(const uint8_t *payload, uint16_t length) {
-    s_nav_sat_count++;  
     if (length < 8) return;
     
     uint8_t num_svs = payload[5];
@@ -272,10 +235,6 @@ static void gps_parse_ubx_byte(uint8_t byte) {
     }
 }
 
-// ---------------------------------------------------------
-// UBX Transmitter & Configuration
-// ---------------------------------------------------------
-
 static void GPS_SendUBX(uint8_t msg_class, uint8_t msg_id, const uint8_t *payload, uint16_t length) {
     uint8_t ck_a = 0, ck_b = 0;
     
@@ -297,12 +256,6 @@ static void GPS_SendUBX(uint8_t msg_class, uint8_t msg_id, const uint8_t *payloa
 
 // M10 Advanced Configuration Function
 static void GPS_ConfigurePureUBX() {
-    Serial.println("[GPS] ========================================");
-    Serial.println("[GPS] Configuring u-blox M10 (Advanced VALSET)");
-    Serial.println("[GPS] 10 Hz, Automotive, minElev 5°, Pure UBX");
-    Serial.println("[GPS] Enabling All GNSS: GPS, GAL, BDS, GLO, QZSS");
-    Serial.println("[GPS] ========================================");
-
     uint8_t cfg_valset[] = {
         0x00,                   // Version
         0x01,                   // Layer: RAM + BBR + Flash (มีผลทันทีและจำค่าไว้ตอนปิดเครื่อง)
@@ -380,8 +333,6 @@ static void GPS_ConfigurePureUBX() {
 }
 
 static void GPS_SetBaudRate(uint32_t baud) {
-    Serial.printf("[GPS] Setting baud rate to %u...\n", baud);
-    
     // M10 Baud Rate Configuration (CFG-UART1-BAUDRATE: 0x40520001)
     uint8_t cfg_baud[] = {
         0x00, 0x07, 0x00, 0x00,
@@ -395,8 +346,6 @@ static void GPS_SetBaudRate(uint32_t baud) {
 
     GPSSerial.updateBaudRate(baud);
     delay(200);
-    
-    Serial.printf("[GPS] Switched to %u baud and saved to flash\n", baud);
 }
 
 bool GPS_Init(void) {
@@ -405,7 +354,6 @@ bool GPS_Init(void) {
     uint32_t detected_baud = 0;
     
     for (int i = 0; i < 4; i++) {
-        Serial.printf("[GPS] Trying baud rate: %u...\n", baud_rates[i]);
         GPSSerial.begin(baud_rates[i], SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
         delay(500);
         
@@ -421,7 +369,6 @@ bool GPS_Init(void) {
         }
         
         if (count > 10 && valid_bytes > 0) {
-            Serial.printf("[GPS] Valid data detected at %u baud\n", baud_rates[i]);
             detected = true;
             detected_baud = baud_rates[i];
             break;
@@ -429,7 +376,6 @@ bool GPS_Init(void) {
     }
     
     if (!detected) {
-        Serial.println("[GPS] ERROR: Module not responding. Check RX/TX pins.");
         return false;
     }
     
@@ -496,25 +442,6 @@ void GPS_GetDebugInfo(gps_debug_info_t *info) {
     taskENTER_CRITICAL(&s_gps_data_lock);
     memcpy(info, &s_gps_debug_info, sizeof(gps_debug_info_t));
     taskEXIT_CRITICAL(&s_gps_data_lock);
-}
-
-void GPS_PrintDebugInfo(void) {
-    gps_debug_info_t info;
-    GPS_GetDebugInfo(&info);
-    
-    Serial.println("\n=======================");
-    Serial.println("GPS DEBUG INFO (M10 UBX)");
-    Serial.println("=======================");
-    Serial.printf("Latitude: %s\n", info.lat);
-    Serial.printf("Longitude: %s\n", info.lon);
-    Serial.printf("Altitude: %s m\n", info.altitude_m);
-    Serial.printf("Speed: %s km/h\n", info.speed_kmh);
-    Serial.printf("Time: %s UTC+7\n", info.utc_time);
-    Serial.printf("Date: %s\n", info.utc_date);
-    Serial.printf("Satellites: %s in use (Visible: %s)\n", info.num_sats, info.total_sats);
-    Serial.printf("hAcc: %.2f m\n", info.horizontal_accuracy_mm / 1000.0f);
-    Serial.printf("Fix: %s\n", s_gps_fix_valid ? "Valid" : "Invalid");
-    Serial.println("=======================");
 }
 
 void GPS_ProcessIncoming(void) { GPS_Update(); }

@@ -45,7 +45,6 @@ void KLine_Init(void) {
     pinMode(static_cast<uint8_t>(KLINE_RX_PIN), INPUT);
     kline_serial.begin(KLINE_BAUD_RATE, SERIAL_8N1, static_cast<int>(KLINE_RX_PIN), static_cast<int>(KLINE_TX_PIN));
     uart_set_line_inverse(UART_NUM_2, UART_SIGNAL_TXD_INV);
-    Serial.println("K-Line SCANNER MODE: [SIMULATOR DECODING REVERSED - 26 BYTES]");
 }
 
 void KLine_Poll(void) {

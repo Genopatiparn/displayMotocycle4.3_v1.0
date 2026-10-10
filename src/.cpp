@@ -95,15 +95,6 @@ static void gps_parse_ubx_byte(uint8_t byte)
                 const uint8_t flags = s_ubx_payload[21];
                 const uint32_t accuracy_mm = read_u32_le(&s_ubx_payload[40]);  // hAcc is at offset 40!
                 
-                // Debug: Show UBX-NAV-PVT raw data
-                static uint32_t last_ubx_log = 0;
-                uint32_t now = millis();
-                if (now - last_ubx_log > 3000) {  // Log every 3 seconds
-                    Serial.printf("[GPS] UBX-NAV-PVT | fix_type: %u | flags: 0x%02X | hAcc_raw: %u mm (%.2f m)\n",
-                                  fix_type, flags, accuracy_mm, accuracy_mm / 1000.0f);
-                    last_ubx_log = now;
-                }
-                
                 taskENTER_CRITICAL(&s_gps_line_lock);
                 s_gps_debug_info.horizontal_accuracy_mm = accuracy_mm;
                 if ((flags & 0x01) == 0 || fix_type == 0) {
@@ -408,8 +399,6 @@ static void gps_parse_gsv_fields(const char *line) {
 void GPS_UART_Init(void) {
     gpsSerial.setRxBufferSize(GPS_RX_BUF_SIZE);
     gpsSerial.begin(GPS_BAUD_RATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    Serial.printf("[GPS] UART%d initialized: RX=GPIO%d, TX=GPIO%d, %d baud\n",
-                  GPS_UART_NUM, GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD_RATE);
 }
 
 // ============================================================================
@@ -457,7 +446,6 @@ static void GPS_SendUBX(uint8_t msg_class, uint8_t msg_id, const uint8_t *payloa
 
 static void GPS_SendUBX_EnableNMEA() {
     // Enable antenna power (UBX-CFG-ANT) for active GPS antennas
-    Serial.println("[GPS] UBX: Enable Antenna Power");
     uint8_t cfg_ant[4] = {
         0x00, 0x00,      // flags: bit 0 = svcs (antenna control enabled), bit 1 = scd (short circuit detection)
         0xF0, 0x3D       // pins: antenna power on
@@ -468,38 +456,32 @@ static void GPS_SendUBX_EnableNMEA() {
     // Enable GGA message (position fix data) - output every epoch
     uint8_t cfg_gga[8] = {0xF0, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
     GPS_SendUBX(0x06, 0x01, cfg_gga, sizeof(cfg_gga));
-    Serial.println("[GPS] UBX: Enable GGA");
     delay(50);
     
     // Enable RMC message (recommended minimum data)
     uint8_t cfg_rmc[8] = {0xF0, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
     GPS_SendUBX(0x06, 0x01, cfg_rmc, sizeof(cfg_rmc));
-    Serial.println("[GPS] UBX: Enable RMC");
     delay(50);
     
     // Enable GSV message (satellites in view) - output EVERY epoch for real-time satellite display
     uint8_t cfg_gsv[8] = {0xF0, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};  // Changed from 0x05 to 0x01
     GPS_SendUBX(0x06, 0x01, cfg_gsv, sizeof(cfg_gsv));
-    Serial.println("[GPS] UBX: Enable GSV (every epoch)");
     delay(50);
     
     // Enable GSA message (DOP and active satellites)
     uint8_t cfg_gsa[8] = {0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
     GPS_SendUBX(0x06, 0x01, cfg_gsa, sizeof(cfg_gsa));
-    Serial.println("[GPS] UBX: Enable GSA");
     delay(50);
 
     // Enable UBX NAV-PVT so hAcc (horizontal accuracy) is available.
     uint8_t cfg_nav_pvt[8] = {0x01, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
     GPS_SendUBX(0x06, 0x01, cfg_nav_pvt, sizeof(cfg_nav_pvt));
-    Serial.println("[GPS] UBX: Enable NAV-PVT");
     delay(50);
 }
 
 // ============================================================================
 
 static void GPS_ConfigureBaudRate230400(void) {
-    Serial.println("[GPS] Configuring GPS to use 230400 baud permanently...");
     
     // UBX-CFG-PRT: Configure UART port
     // Structure: portID(1), reserved1(1), txReady(2), mode(4), baudRate(4), inProtoMask(2), outProtoMask(2), flags(2), reserved2(2)
@@ -525,34 +507,25 @@ static void GPS_ConfigureBaudRate230400(void) {
         0x00, 0x00, 0x00, 0x00   // loadMask = 0 (don't load now)
     };
     GPS_SendUBX(0x06, 0x09, cfg_save, sizeof(cfg_save));
-    Serial.println("[GPS] Configuration saved to GPS flash memory");
     delay(100);
     
     // Now restart ESP32 UART at 230400 baud
-    Serial.println("[GPS] Restarting UART at 230400 baud...");
     gpsSerial.end();
     delay(200);
     gpsSerial.setRxBufferSize(GPS_RX_BUF_SIZE);
     gpsSerial.begin(230400, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
     delay(500);
-    Serial.println("[GPS] ✓ GPS now running at 230400 baud (saved permanently)");
 }
 
 void GPS_Init(void) {
-    Serial.println("\n[GPS] ========================================");
-    Serial.println("[GPS] Initializing SR1723 GPS Module");
-    Serial.println("[GPS] ========================================");
     
     // Simple init like original GPS_Driver - no auto-detection
     gpsSerial.setRxBufferSize(GPS_RX_BUF_SIZE);
     gpsSerial.begin(GPS_BAUD_RATE, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    Serial.printf("[GPS] UART%d initialized: RX=GPIO%d, TX=GPIO%d, %d baud\n",
-                  GPS_UART_NUM, GPS_RX_PIN, GPS_TX_PIN, GPS_BAUD_RATE);
     
     delay(500);
     
     // Send factory reset to ensure NMEA output is enabled
-    Serial.println("[GPS] Sending factory reset to enable NMEA...");
     uint8_t cfg_reset[13] = {
         0xFF, 0xFF, 0xFF, 0xFF,  // clearMask
         0x00, 0x00, 0x00, 0x00,  // saveMask
@@ -561,17 +534,11 @@ void GPS_Init(void) {
     };
     GPS_SendUBX(0x06, 0x09, cfg_reset, sizeof(cfg_reset));
     delay(1000);
-    Serial.println("[GPS] Factory reset complete");
     
     // Configure NMEA sentences
-    Serial.println("[GPS] Configuring NMEA output...");
     GPS_SendUBX_EnableNMEA();
     delay(200);
     
-    Serial.println("[GPS] ========================================");
-    Serial.println("[GPS] ✓ GPS initialization complete!");
-    Serial.println("[GPS] Waiting for satellite lock...");
-    Serial.println("[GPS] ========================================\n");
 }
 
 void GPS_ProcessIncoming(void) {
@@ -636,18 +603,6 @@ void GPS_GetDebugInfo(gps_debug_info_t *out) {
 }
 
 void GPS_PrintInfo(void) {
-    gps_debug_info_t info;
-    GPS_GetDebugInfo(&info);
-    
-    Serial.println("=== GPS SR1723 Info ===");
-    Serial.printf("Position: %s, %s\n", info.lat, info.lon);
-    Serial.printf("Altitude: %s m\n", info.altitude_m);
-    Serial.printf("Speed: %s km/h\n", info.speed_kmh);
-    Serial.printf("Time: %s UTC\n", info.utc_time);
-    Serial.printf("Date: %s\n", info.utc_date);
-    Serial.printf("Satellites: %s (Total visible: %s)\n", info.num_sats, info.total_sats);
-    Serial.printf("Fix: %s\n", s_gps_fix_valid ? "Valid" : "Invalid");
-    Serial.println("=======================");
 }
 
 bool GPS_HasFix(void) {
@@ -689,8 +644,6 @@ int GPS_GetAvailableBytes(void) {
 void GPS_PrintRawData(int max_bytes) {
     int available = gpsSerial.available();
     if (available > 0) {
-        Serial.printf("[GPS] %d bytes in UART buffer\n", available);
-        
         char buf[129];
         int read_len = gpsSerial.readBytes((uint8_t*)buf, min(available, max_bytes));
         buf[read_len] = '\0';
@@ -703,13 +656,8 @@ void GPS_PrintRawData(int max_bytes) {
                 Serial.print("<CR>");
             } else if (buf[i] == '\n') {
                 Serial.print("<LF>");
-            } else {
-                Serial.printf("<%02X>", (uint8_t)buf[i]);
             }
         }
-        Serial.println();
-    } else {
-        Serial.println("[GPS] No data in UART buffer");
     }
 }
 
@@ -718,16 +666,9 @@ bool GPS_AutoDetectBaudRate(void) {
     uint32_t baud_rates[] = {230400, 115200, 9600, 38400, 57600};
     int num_rates = sizeof(baud_rates) / sizeof(baud_rates[0]);
     
-    Serial.println("\n[GPS] Auto-detecting baud rate...");
-    Serial.println("[GPS] Wiring check:");
-    Serial.printf("      ESP32 GPIO%d (TX) → GPS RXD\n", GPS_TX_PIN);
-    Serial.printf("      ESP32 GPIO%d (RX) ← GPS TXD\n", GPS_RX_PIN);
-    Serial.println("      ESP32 GND       → GPS GND");
-    Serial.println("      ESP32 3.3V      → GPS VCC\n");
     
     for (int i = 0; i < num_rates; i++) {
         uint32_t baud = baud_rates[i];
-        Serial.printf("[GPS] Trying %d baud...\n", baud);
         
         // Reinitialize UART with new baud rate
         gpsSerial.end();
@@ -739,7 +680,6 @@ bool GPS_AutoDetectBaudRate(void) {
         // Check if data is available
         int available = gpsSerial.available();
         if (available > 0) {
-            Serial.printf("[GPS] ✓ Found data at %d baud! (%d bytes)\n", baud, available);
             
             // Read and validate NMEA data
             char test_buf[512];
@@ -761,39 +701,24 @@ bool GPS_AutoDetectBaudRate(void) {
             }
             
             if (nmea_count >= 2) {
-                Serial.printf("[GPS] ✓✓ Valid NMEA data detected at %d baud! (found %d sentences)\n", 
-                             baud, nmea_count);
                 Serial.print("[GPS] Sample: ");
                 for (int j = 0; j < min(read_len, 80); j++) {
                     if (test_buf[j] >= 32 && test_buf[j] <= 126) {
                         Serial.print(test_buf[j]);
                     }
                 }
-                Serial.println();
-                
                 // Keep this baud rate - already initialized!
                 return true;
             } else {
-                Serial.printf("[GPS] Data received but only %d NMEA sentence(s) found (need 2+)\n", nmea_count);
                 Serial.print("[GPS] Sample hex: ");
                 for (int j = 0; j < min(read_len, 40); j++) {
-                    Serial.printf("%02X ", (uint8_t)test_buf[j]);
+                    Serial.print((uint8_t)test_buf[j], HEX);
+                    Serial.print(' ');
                 }
-                Serial.println();
             }
-        } else {
-            Serial.printf("[GPS] No response at %d baud (0 bytes)\n", baud);
         }
     }
     
-    Serial.println("\n[GPS] ✗✗✗ FAILED TO DETECT BAUD RATE ✗✗✗");
-    Serial.println("[GPS] Possible issues:");
-    Serial.println("  ⚠ GPS module not powered (check 3.3V on VCC pin)");
-    Serial.println("  ⚠ RX/TX wires swapped (must be cross-over: ESP TX→GPS RX)");
-    Serial.println("  ⚠ GPS antenna not connected");
-    Serial.println("  ⚠ Wrong UART pins in hardware_config.h");
-    Serial.println("  ⚠ GPS module damaged/defective\n");
-    Serial.println("[GPS] Using default: 230400 baud (will keep trying in background)");
     
     // Try default 230400
     gpsSerial.end();
@@ -827,15 +752,6 @@ const char* GPS_GetQualityStatus(void) {
     taskENTER_CRITICAL(&s_gps_line_lock);
     const uint32_t accuracy_mm = s_gps_debug_info.horizontal_accuracy_mm;  // From UBX NAV-PVT
     taskEXIT_CRITICAL(&s_gps_line_lock);
-
-    // Debug: Show accuracy value
-    static uint32_t last_log_ms = 0;
-    uint32_t now = millis();
-    if (now - last_log_ms > 2000) {  // Log every 2 seconds
-        Serial.printf("[GPS] Status Debug | hAcc: %u mm (%.2f m) | RMC fix_valid: %d\n",
-                      accuracy_mm, accuracy_mm / 1000.0f, s_gps_fix_valid ? 1 : 0);
-        last_log_ms = now;
-    }
 
     // Use UBX NAV-PVT horizontal accuracy only (don't check s_gps_fix_valid)
     // UBX-NAV-PVT is more reliable than NMEA RMC status
