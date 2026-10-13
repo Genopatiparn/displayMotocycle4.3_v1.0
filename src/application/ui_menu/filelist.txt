@@ -3,6 +3,10 @@ ui.c
 ui_comp_hook.c
 ui_helpers.c
 ui_img_background_png.c
+ui_img_display_red_png.c
+ui_img_circuit_mode_png.c
+ui_img_drag_mode_png.c
+ui_img_gps_red_png.c
 ui_img_gps_status_0_png.c
 ui_img_display_png.c
 ui_img_artboard_4_png.c

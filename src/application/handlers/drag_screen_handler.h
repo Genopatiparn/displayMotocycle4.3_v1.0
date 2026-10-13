@@ -8,6 +8,9 @@ extern "C" {
 #endif
 
 void DragScreenHandler_Init(void);
+void DragScreenHandler_Update(void);
+void DragScreenHandler_Start(void);
+void DragScreenHandler_Reset(void);
 lv_obj_t *DragScreenHandler_GetScreen(void);
 void DragScreenHandler_Destroy(void);
 

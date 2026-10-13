@@ -31,6 +31,8 @@ extern "C" {
 
 ///////////////////// VARIABLES ////////////////////
 
+extern lv_anim_t * MoveDisplay_Animation(lv_obj_t * TargetObject, int delay);
+extern lv_anim_t * Movedrag_Animation(lv_obj_t * TargetObject, int delay);
 
 // EVENTS
 
@@ -38,6 +40,10 @@ extern lv_obj_t * ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
 LV_IMG_DECLARE(ui_img_background_png);    // assets/Background.png
+LV_IMG_DECLARE(ui_img_display_red_png);    // assets/Display Red.png
+LV_IMG_DECLARE(ui_img_circuit_mode_png);    // assets/Circuit Mode.png
+LV_IMG_DECLARE(ui_img_drag_mode_png);    // assets/Drag Mode.png
+LV_IMG_DECLARE(ui_img_gps_red_png);    // assets/GPS red.png
 LV_IMG_DECLARE(ui_img_gps_status_0_png);    // assets/GPS Status 0.png
 LV_IMG_DECLARE(ui_img_display_png);    // assets/Display.png
 LV_IMG_DECLARE(ui_img_artboard_4_png);    // assets/Artboard 4.png

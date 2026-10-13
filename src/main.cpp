@@ -54,6 +54,7 @@ static bool kline_task_init_done = false;
 void KLineTaskCode(void * pvParameters) {
     vTaskDelay(1500 / portTICK_PERIOD_MS);
 
+    Serial.println("[K-Line Task] Starting K-Line initialization...");
     KLine_Init();
     kline_task_init_done = true;
 
@@ -61,6 +62,7 @@ void KLineTaskCode(void * pvParameters) {
         if (kline_handshake_done) {
             KLine_Poll();
         } else {
+            Serial.println("[K-Line Task] Connection Lost! Retrying Handshake in 2 seconds...");
             vTaskDelay(2000 / portTICK_PERIOD_MS);
             KLine_Init();
         }
@@ -81,26 +83,35 @@ void GPSTaskCode(void * pvParameters) {
 void setup()
 {
     Serial.begin(115200);
+    Serial.println("\n\n=== ESP32-S3 Motorcycle Display - FAST BOOT ===");
 
     // ========== CRITICAL: จอติดก่อน! ==========
     LCD_RGB_Init();
     Lvgl_Init();
     LCD_RGB_BacklightInit();
     ScreenManager_Init();
+    Serial.println("[BOOT] Display ready!");
 
+    // ========== Non-blocking peripheral init ==========
     adc_initialized = ADC_Button_Init();
     
     led_initialized = WS2811_Init();
 
+    // ========== K-Line init (NO handshake blocking here) ==========
     kline_use_handshake = true;
-
+    // ไม่เรียก KLine_Init() ตอนนี้ เพราะจะบล็อกจอ
+    // จะให้ Task ทำ Handshake แทน
+    
+    // ========== GPS init (quick, non-blocking) ==========
     GPS_Init();
     gps_initialized = true;
 
+    // ========== Create background tasks ==========
+    // K-Line Task จะทำ Handshake ใน background
     xTaskCreatePinnedToCore(
         KLineTaskCode,   
         "KLineTask",     
-        8192,            //
+        8192,            // เพิ่ม stack เพื่อ Handshake
         NULL,            
         3,               
         &KLineTask,      
@@ -115,6 +126,7 @@ void setup()
         NULL,
         0);
 
+    Serial.println("[BOOT] All systems ready - Display online!");
 }
 
 void loop()
@@ -128,7 +140,8 @@ void loop()
     tinj = data.tinj;
     afr = data.afr;
     speed = data.speed;
-  
+    
+    // ดึงค่า inj_duty ที่คำนวณอย่างแม่นยำมาจาก K-Line โดยตรง!
     inj_duty = data.inj_duty;
 
     if (millis() - last_ui_update >= UI_UPDATE_INTERVAL) {
@@ -215,6 +228,9 @@ void loop()
     if (btn12 != last_logged_btn12 || btn34 != last_logged_btn34) {
         last_logged_btn12 = btn12;
         last_logged_btn34 = btn34;
+        Serial.printf("[BUTTON] SW12=%d (%.1fmV), SW34=%d (%.1fmV)\n",
+                      btn12, ADC_ReadVoltage_mV(ADS1115_CH_SW1),
+                      btn34, ADC_ReadVoltage_mV(ADS1115_CH_SW2));
     }
 
     // GPS UI updates (GPS_ProcessIncoming now runs in separate task)

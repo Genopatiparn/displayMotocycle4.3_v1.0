@@ -1,6 +1,6 @@
 #include "radar_screen_handler.h"
 #include "ui_radarmode/ui_Screen1.h"
-#include "../../gps_sr1723.h"
+#include "gps_sr1723.h"
 #include <Arduino.h>
 #include <algorithm>
 #include <vector>

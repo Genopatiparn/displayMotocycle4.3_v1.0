@@ -43,11 +43,6 @@ typedef struct {
 } gps_debug_info_t;
 
 /**
- * @brief Initialize GPS UART
- */
-void GPS_UART_Init(void);
-
-/**
  * @brief Initialize GPS module (Pure UBX configuration)
  * @return true if initialization successful, false otherwise
  */
@@ -59,22 +54,10 @@ bool GPS_Init(void);
 void GPS_ProcessIncoming(void);
 
 /**
- * @brief Get latest GGA sentence
- * @param out Output buffer
- * @param out_size Buffer size
- */
-void GPS_GetLatestGGA(char *out, size_t out_size);
-
-/**
  * @brief Get GPS debug information
  * @param out Output structure
  */
 void GPS_GetDebugInfo(gps_debug_info_t *out);
-
-/**
- * @brief Print GPS information to Serial
- */
-void GPS_PrintInfo(void);
 
 /**
  * @brief Check if GPS has valid fix
@@ -124,24 +107,6 @@ uint8_t GPS_GetSatelliteInfo(gps_satellite_t *satellites);
  * @return "Excellent", "Good", "Moderate", "Fair", or "Bad"
  */
 const char* GPS_GetQualityStatus(void);
-
-/**
- * @brief Get available bytes in UART buffer
- * @return Number of bytes available
- */
-int GPS_GetAvailableBytes(void);
-
-/**
- * @brief Print raw data from GPS UART (for debugging)
- * @param max_bytes Maximum bytes to read and print
- */
-void GPS_PrintRawData(int max_bytes);
-
-/**
- * @brief Auto-detect GPS baud rate
- * @return true if baud rate detected successfully
- */
-bool GPS_AutoDetectBaudRate(void);
 
 #ifdef __cplusplus
 }

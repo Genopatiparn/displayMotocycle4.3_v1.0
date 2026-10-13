@@ -38,7 +38,7 @@
 //   - RX ไม่ invert
 // ============================================================================
 
-#if KLINE_MODE == 4
+#if KLINE_MODE == 98
 
 bool kline_use_handshake = false;
 bool kline_handshake_done = true;

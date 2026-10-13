@@ -3,6 +3,7 @@
 #include "application/handlers/menu_screen_handler.h"
 #include "application/handlers/drag_screen_handler.h"
 #include "application/handlers/radar_screen_handler.h"
+#include "application/handlers/settingScreenHandler.h"
 #include <Arduino.h>
 
 static screen_type_t current_screen = SCREEN_HOME;
@@ -25,6 +26,7 @@ void ScreenManager_Init(void)
     MenuScreenHandler_Init();
     RadarScreenHandler_Init();
     DragScreenHandler_Init();
+    SettingScreenHandler_Init();
 
     for (uint8_t index = 0; index < MENU_ITEM_MAX; index++) {
         menu_icons[index] = MenuScreenHandler_GetIcon(index);
@@ -53,6 +55,9 @@ void ScreenManager_SwitchTo(screen_type_t screen)
         case SCREEN_RADAR:
             lv_screen_load(RadarScreenHandler_GetScreen());
             break;
+        case SCREEN_SETTING:
+            lv_screen_load(SettingScreenHandler_GetScreen());
+            break;
         default:
             break;
     }
@@ -67,20 +72,8 @@ void ScreenManager_MenuHighlight(menu_item_t item)
 {
     if (item >= MENU_ITEM_MAX) return;
     
-    // Set all icons to dim (50% opacity), no tint
-    for (uint8_t i = 0; i < MENU_ITEM_MAX; i++) {
-        if (menu_icons[i]) {
-            lv_obj_set_style_opa(menu_icons[i], LV_OPA_50, 0);
-            lv_obj_set_style_image_recolor_opa(menu_icons[i], LV_OPA_TRANSP, 0);
-        }
-    }
-    
-    // Highlight selected icon with 100% opacity + red tint
-    if (menu_icons[item]) {
-        lv_obj_set_style_opa(menu_icons[item], LV_OPA_100, 0);
-        lv_obj_set_style_image_recolor_opa(menu_icons[item], LV_OPA_80, 0);
-        lv_obj_set_style_image_recolor(menu_icons[item], lv_color_hex(0xFF0000), 0);
-    }
+    // Use the new MenuScreenHandler_HighlightIcon function
+    MenuScreenHandler_HighlightIcon(item);
     
     selected_menu_item = item;
 }
@@ -128,11 +121,11 @@ void ScreenManager_HandleButton(button_status_t btn12, button_status_t btn34)
             if (selected_menu_item == MENU_ITEM_RADAR) ScreenManager_SwitchTo(SCREEN_RADAR);
             else if (selected_menu_item == MENU_ITEM_DISPLAY) ScreenManager_SwitchTo(SCREEN_HOME);
             else if (selected_menu_item == MENU_ITEM_DRAG) ScreenManager_SwitchTo(SCREEN_DRAG);
-            else if (selected_menu_item == MENU_ITEM_SETTING) ScreenManager_SwitchTo(SCREEN_HOME);
+            else if (selected_menu_item == MENU_ITEM_SETTING) ScreenManager_SwitchTo(SCREEN_SETTING);
         } else if (btn34_edge == BTN_SW4) {
             ScreenManager_SwitchTo(SCREEN_HOME);
         }
-    } else if ((current_screen == SCREEN_DRAG || current_screen == SCREEN_RADAR) && btn34_edge == BTN_SW4) {
+    } else if ((current_screen == SCREEN_DRAG || current_screen == SCREEN_RADAR || current_screen == SCREEN_SETTING) && btn34_edge == BTN_SW4) {
         ScreenManager_SwitchTo(SCREEN_HOME);
     }
 }

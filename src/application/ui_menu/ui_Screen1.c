@@ -7,6 +7,10 @@
 
 lv_obj_t * ui_Screen1 = NULL;
 lv_obj_t * ui_Image4 = NULL;
+lv_obj_t * ui_Display = NULL;
+lv_obj_t * ui_Circuit = NULL;
+lv_obj_t * ui_Drag = NULL;
+lv_obj_t * ui_Gps_red = NULL;
 lv_obj_t * ui_Image3 = NULL;
 lv_obj_t * ui_Label4 = NULL;
 lv_obj_t * ui_Image5 = NULL;
@@ -34,6 +38,50 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_align(ui_Image4, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_Image4, LV_OBJ_FLAG_CLICKABLE);     /// Flags
     lv_obj_remove_flag(ui_Image4, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Display = lv_image_create(ui_Screen1);
+    lv_image_set_src(ui_Display, &ui_img_display_red_png);
+    lv_obj_set_width(ui_Display, LV_SIZE_CONTENT);   /// 61
+    lv_obj_set_height(ui_Display, LV_SIZE_CONTENT);    /// 61
+    lv_obj_set_x(ui_Display, -164);
+    lv_obj_set_y(ui_Display, -30);
+    lv_obj_set_align(ui_Display, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Display, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_add_flag(ui_Display, LV_OBJ_FLAG_HIDDEN);        /// ซ่อนรูปแดงเริ่มต้น
+    lv_obj_remove_flag(ui_Display, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Circuit = lv_image_create(ui_Screen1);
+    lv_image_set_src(ui_Circuit, &ui_img_circuit_mode_png);
+    lv_obj_set_width(ui_Circuit, LV_SIZE_CONTENT);   /// 61
+    lv_obj_set_height(ui_Circuit, LV_SIZE_CONTENT);    /// 61
+    lv_obj_set_x(ui_Circuit, -111);
+    lv_obj_set_y(ui_Circuit, 64);
+    lv_obj_set_align(ui_Circuit, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Circuit, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_add_flag(ui_Circuit, LV_OBJ_FLAG_HIDDEN);        /// ซ่อนรูปแดงเริ่มต้น
+    lv_obj_remove_flag(ui_Circuit, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Drag = lv_image_create(ui_Screen1);
+    lv_image_set_src(ui_Drag, &ui_img_drag_mode_png);
+    lv_obj_set_width(ui_Drag, LV_SIZE_CONTENT);   /// 61
+    lv_obj_set_height(ui_Drag, LV_SIZE_CONTENT);    /// 60
+    lv_obj_set_x(ui_Drag, 54);
+    lv_obj_set_y(ui_Drag, -26);
+    lv_obj_set_align(ui_Drag, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Drag, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_add_flag(ui_Drag, LV_OBJ_FLAG_HIDDEN);        /// ซ่อนรูปแดงเริ่มต้น
+    lv_obj_remove_flag(ui_Drag, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Gps_red = lv_image_create(ui_Screen1);
+    lv_image_set_src(ui_Gps_red, &ui_img_gps_red_png);
+    lv_obj_set_width(ui_Gps_red, LV_SIZE_CONTENT);   /// 61
+    lv_obj_set_height(ui_Gps_red, LV_SIZE_CONTENT);    /// 61
+    lv_obj_set_x(ui_Gps_red, 104);
+    lv_obj_set_y(ui_Gps_red, 64);
+    lv_obj_set_align(ui_Gps_red, LV_ALIGN_CENTER);
+    lv_obj_add_flag(ui_Gps_red, LV_OBJ_FLAG_CLICKABLE);     /// Flags
+    lv_obj_add_flag(ui_Gps_red, LV_OBJ_FLAG_HIDDEN);        /// ซ่อนรูปแดงเริ่มต้น
+    lv_obj_remove_flag(ui_Gps_red, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image3 = lv_image_create(ui_Screen1);
     lv_image_set_src(ui_Image3, &ui_img_gps_status_0_png);
@@ -69,7 +117,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_width(ui_Image6, LV_SIZE_CONTENT);   /// 61
     lv_obj_set_height(ui_Image6, LV_SIZE_CONTENT);    /// 60
     lv_obj_set_x(ui_Image6, -52);
-    lv_obj_set_y(ui_Image6, -35);
+    lv_obj_set_y(ui_Image6, -31);
     lv_obj_set_align(ui_Image6, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_Image6, LV_OBJ_FLAG_CLICKABLE);     /// Flags
     lv_obj_remove_flag(ui_Image6, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
@@ -95,7 +143,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_remove_flag(ui_Image8, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
     ui_Image9 = lv_image_create(ui_Screen1);
-    lv_image_set_src(ui_Image9, &ui_img_artboard_5_png);
+    lv_image_set_src(ui_Image9, &ui_img_artboard_5_png);  // ใช้ artboard_5 (สีเทา)
     lv_obj_set_width(ui_Image9, LV_SIZE_CONTENT);   /// 61
     lv_obj_set_height(ui_Image9, LV_SIZE_CONTENT);    /// 61
     lv_obj_set_x(ui_Image9, -111);
@@ -108,7 +156,7 @@ void ui_Screen1_screen_init(void)
     lv_image_set_src(ui_Image10, &ui_img_gps_png);
     lv_obj_set_width(ui_Image10, LV_SIZE_CONTENT);   /// 61
     lv_obj_set_height(ui_Image10, LV_SIZE_CONTENT);    /// 61
-    lv_obj_set_x(ui_Image10, 104);
+    lv_obj_set_x(ui_Image10, 105);
     lv_obj_set_y(ui_Image10, 55);
     lv_obj_set_align(ui_Image10, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_Image10, LV_OBJ_FLAG_CLICKABLE);     /// Flags
@@ -133,6 +181,10 @@ void ui_Screen1_screen_destroy(void)
     // NULL screen variables
     ui_Screen1 = NULL;
     ui_Image4 = NULL;
+    ui_Display = NULL;
+    ui_Circuit = NULL;
+    ui_Drag = NULL;
+    ui_Gps_red = NULL;
     ui_Image3 = NULL;
     ui_Label4 = NULL;
     ui_Image5 = NULL;

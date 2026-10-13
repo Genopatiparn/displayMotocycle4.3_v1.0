@@ -19,7 +19,7 @@
 //   AFR = AFR decoded from formula
 // ============================================================================
 
-#if KLINE_MODE == 1
+#if KLINE_MODE == 97
 
 bool kline_use_handshake = false;
 bool kline_handshake_done = false;

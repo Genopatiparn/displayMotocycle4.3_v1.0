@@ -3,7 +3,7 @@
 #include "driver/uart.h"
 
 //KLINE_MODE = 2
-#if KLINE_MODE == 2
+#if KLINE_MODE == 99
 
 namespace {
 

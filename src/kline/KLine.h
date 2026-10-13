@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define KLINE_MODE 3 
+#define KLINE_MODE 1 
 
 struct KLineData {
     uint16_t rpm;          // รอบเครื่อง

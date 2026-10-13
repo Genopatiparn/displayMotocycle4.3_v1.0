@@ -10,7 +10,8 @@ extern "C" {
 void MenuScreenHandler_Init(void);
 lv_obj_t *MenuScreenHandler_GetScreen(void);
 lv_obj_t *MenuScreenHandler_GetIcon(uint8_t index);
-void MenuScreenHandler_UpdateGPS(void);  
+void MenuScreenHandler_UpdateGPS(void);
+void MenuScreenHandler_HighlightIcon(uint8_t index);
 
 #ifdef __cplusplus
 }
