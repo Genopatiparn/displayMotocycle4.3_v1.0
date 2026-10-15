@@ -9,6 +9,7 @@ extern "C" {
 
 void DragScreenHandler_Init(void);
 void DragScreenHandler_Update(void);
+void DragScreenHandler_RefreshTimes(void);  // Refresh recorded times on screen
 void DragScreenHandler_Start(void);
 void DragScreenHandler_Reset(void);
 lv_obj_t *DragScreenHandler_GetScreen(void);

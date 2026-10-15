@@ -3,40 +3,6 @@
 #include "driver/uart.h"
 #include <string.h>
 
-// ============================================================================
-// KLINE_MODE == 4
-// Doctor API / Honda K-Line ECU Emulator
-//
-// ใช้ ESP32 จำลอง ECU เพื่อป้อนค่า RAW 0x20 ให้ Doctor API
-// โดยไม่ต้องใช้รถจริง / ไดโน
-//
-// รองรับ:
-//   - Handshake STEP1: FE 04 72 8C
-//   - Handshake STEP2: 72 05 00 F0 99
-//       -> ตอบ 02 04 00 FA
-//   - CMD 0x17:
-//       72 07 72 17 00 0F EF
-//       -> ตอบ Engine frame ค่าคงที่
-//   - CMD 0x20:
-//       72 07 72 20 00 02 F3
-//       -> ตอบ 02 08 72 20 00 RAW 00 CHECKSUM
-//   - CMD 0x11:
-//       72 07 72 11 00 14 F0
-//
-// Serial Monitor commands:
-//   r32           -> RAW = 32
-//   r0            -> RAW = 0
-//   r255          -> RAW = 255
-//   range 0 80    -> ตั้งช่วง Auto Sweep
-//   auto           -> เริ่ม Auto Sweep
-//                     RAW เดิมถูกส่งซ้ำ 5 request แล้วค่อยเพิ่ม +1
-//   stop           -> หยุด
-//   show           -> ดูสถานะ
-//
-// หมายเหตุ:
-//   - TX stage ใช้ BC817 แบบเดิม จึง invert TX
-//   - RX ไม่ invert
-// ============================================================================
 
 #if KLINE_MODE == 98
 

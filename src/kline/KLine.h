@@ -11,8 +11,8 @@ struct KLineData {
     int16_t  map;          // MAP 
     int16_t  tps;          // TPS (คูณ 10)
     int16_t  ignition;     // องศาไฟจุดระเบิด (คูณ 10)
-    int16_t  afr;          // AFR (เช่น 147 = 14.7)
-    int16_t  tinj;         // ระยะเวลาฉีด (คูณ 10)
+    int16_t  afr;          // AFR 
+    int16_t  tinj;         
     int16_t  speed;        // ความเร็ว km/h
     uint16_t inj_duty;     // ภาระหัวฉีด (0-100%) 
 };

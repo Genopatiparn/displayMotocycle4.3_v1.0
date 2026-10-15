@@ -19,6 +19,7 @@ static uint8_t s_num_satellites = 0;
 static gps_satellite_t s_satellites[GPS_MAX_SATELLITES];
 static uint8_t s_satellite_count = 0;
 static bool s_gps_fix_valid = false;
+static uint32_t s_gps_updated_at_ms = 0;
 
 // Time/Date from UBX-NAV-PVT
 static uint16_t s_gps_year = 0;
@@ -121,6 +122,7 @@ static void gps_parse_ubx_nav_pvt(const uint8_t *payload, uint16_t length) {
     s_speed_kmh = speed_kmh;
     s_num_satellites = num_sv;
     s_gps_fix_valid = fix_valid;
+    s_gps_updated_at_ms = millis();
     
     snprintf(s_gps_debug_info.lat, sizeof(s_gps_debug_info.lat), "%.6f", latitude);
     snprintf(s_gps_debug_info.lon, sizeof(s_gps_debug_info.lon), "%.6f", longitude);
@@ -220,15 +222,22 @@ static void gps_parse_ubx_byte(uint8_t byte) {
             s_ubx_state = (s_ubx_length > 0) ? 6 : 7;
             break;
         case 6: 
-            if (s_ubx_payload_counter < sizeof(s_ubx_payload)) s_ubx_payload[s_ubx_payload_counter++] = byte;
+            // Store byte in buffer only if there's space, but always increment counter
+            if (s_ubx_payload_counter < sizeof(s_ubx_payload)) {
+                s_ubx_payload[s_ubx_payload_counter] = byte;
+            }
+            s_ubx_payload_counter++;
             s_ubx_ck_a += byte; s_ubx_ck_b += s_ubx_ck_a;
             if (s_ubx_payload_counter >= s_ubx_length) s_ubx_state = 7;
             break;
         case 7: s_ubx_state = (byte == s_ubx_ck_a) ? 8 : 0; break;
         case 8:
             if (byte == s_ubx_ck_b) {
-                if (s_ubx_class == 0x01 && s_ubx_id == 0x07) gps_parse_ubx_nav_pvt(s_ubx_payload, s_ubx_length);
-                else if (s_ubx_class == 0x01 && s_ubx_id == 0x35) gps_parse_ubx_nav_sat(s_ubx_payload, s_ubx_length);
+                // Only parse if payload was fully captured in buffer
+                if (s_ubx_length <= sizeof(s_ubx_payload)) {
+                    if (s_ubx_class == 0x01 && s_ubx_id == 0x07) gps_parse_ubx_nav_pvt(s_ubx_payload, s_ubx_length);
+                    else if (s_ubx_class == 0x01 && s_ubx_id == 0x35) gps_parse_ubx_nav_sat(s_ubx_payload, s_ubx_length);
+                }
             }
             s_ubx_state = 0;
             break;
@@ -410,6 +419,18 @@ void GPS_GetPosition(double *lat, double *lon, float *alt) {
     if (lat) *lat = s_latitude;
     if (lon) *lon = s_longitude;
     if (alt) *alt = s_altitude_m;
+    taskEXIT_CRITICAL(&s_gps_data_lock);
+}
+
+void GPS_GetFix(gps_fix_t *out) {
+    if (!out) return;
+    taskENTER_CRITICAL(&s_gps_data_lock);
+    out->latitude_deg = s_latitude;
+    out->longitude_deg = s_longitude;
+    out->speed_kmh = s_speed_kmh;
+    out->horizontal_accuracy_mm = s_gps_debug_info.horizontal_accuracy_mm;
+    out->updated_at_ms = s_gps_updated_at_ms;
+    out->valid = s_gps_fix_valid;
     taskEXIT_CRITICAL(&s_gps_data_lock);
 }
 

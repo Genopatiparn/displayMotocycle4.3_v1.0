@@ -42,6 +42,15 @@ typedef struct {
     uint32_t horizontal_accuracy_mm; // UBX NAV-PVT hAcc
 } gps_debug_info_t;
 
+typedef struct {
+    double latitude_deg;
+    double longitude_deg;
+    float speed_kmh;
+    uint32_t horizontal_accuracy_mm;
+    uint32_t updated_at_ms;
+    bool valid;
+} gps_fix_t;
+
 /**
  * @brief Initialize GPS module (Pure UBX configuration)
  * @return true if initialization successful, false otherwise
@@ -58,6 +67,9 @@ void GPS_ProcessIncoming(void);
  * @param out Output structure
  */
 void GPS_GetDebugInfo(gps_debug_info_t *out);
+
+/** @brief Get one coherent GPS fix snapshot, including position and accuracy. */
+void GPS_GetFix(gps_fix_t *out);
 
 /**
  * @brief Check if GPS has valid fix

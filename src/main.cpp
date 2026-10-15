@@ -11,13 +11,14 @@
 #include "gps_sr1723.h"
 #include "application/handlers/radar_screen_handler.h"
 #include "application/handlers/menu_screen_handler.h"
+#include "application/handlers/drag_screen_handler.h"  
 
 extern bool kline_use_handshake;
 extern bool kline_handshake_done;
 
 uint16_t rpm = 0;
 uint16_t speed = 0;
-uint16_t afr = 147;
+uint16_t afr = 0;  // 0.0 AFR (รอข้อมูลจริงจาก K-Line)
 uint16_t tps = 0;
 uint16_t map_val = 0;
 uint16_t inj_duty = 0;
@@ -151,7 +152,7 @@ void loop()
             WS2811_ShowRPM(rpm, 12000);
         }
 
-        if (abs((int)rpm - (int)last_rpm) > 15 || rpm == 0) {
+        if (rpm != last_rpm) {
             lv_label_set_text_fmt(ui_Label1, "%d", rpm);
             
             int16_t angle = (rpm * 2700) / 12000;
@@ -236,20 +237,37 @@ void loop()
     // GPS UI updates (GPS_ProcessIncoming now runs in separate task)
     if (gps_initialized) {
         static unsigned long last_gps_ui_update = 0;
-        if (millis() - last_gps_ui_update >= 1000) {  // Update UI every 1000ms (1 Hz) - save CPU
-            last_gps_ui_update = millis();
-            
-            // Update GPS UI based on current screen
-            screen_type_t current_screen = ScreenManager_GetCurrentScreen();
-            if (current_screen == SCREEN_RADAR) {
-                RadarScreenHandler_UpdateGPS();
-            } else if (current_screen == SCREEN_MENU) {
-                MenuScreenHandler_UpdateGPS();
+        screen_type_t current_screen = ScreenManager_GetCurrentScreen();
+        
+        // Drag screen needs faster updates (50ms)
+        if (current_screen == SCREEN_DRAG) {
+            if (millis() - last_gps_ui_update >= 50) {
+                last_gps_ui_update = millis();
+                DragScreenHandler_Update();
+            }
+        } else {
+            // Other screens update slower (1000ms)
+            if (millis() - last_gps_ui_update >= 1000) {
+                last_gps_ui_update = millis();
+                
+                if (current_screen == SCREEN_RADAR) {
+                    RadarScreenHandler_UpdateGPS();
+                } else if (current_screen == SCREEN_MENU) {
+                    MenuScreenHandler_UpdateGPS();
+                }
             }
         }
-        
     }
 
     lv_timer_handler();
     delay(5);
+    
+    // Continuously update recorded times in Drag Screen (if passed and running/finished)
+    static unsigned long last_drag_time_refresh = 0;
+    if (gps_initialized && ScreenManager_GetCurrentScreen() == SCREEN_DRAG) {
+        if (millis() - last_drag_time_refresh >= 100) {
+            last_drag_time_refresh = millis();
+            DragScreenHandler_RefreshTimes();
+        }
+    }
 }

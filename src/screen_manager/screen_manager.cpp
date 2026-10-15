@@ -127,5 +127,14 @@ void ScreenManager_HandleButton(button_status_t btn12, button_status_t btn34)
         }
     } else if ((current_screen == SCREEN_DRAG || current_screen == SCREEN_RADAR || current_screen == SCREEN_SETTING) && btn34_edge == BTN_SW4) {
         ScreenManager_SwitchTo(SCREEN_HOME);
+    } else if (current_screen == SCREEN_DRAG) {
+        // Drag Screen controls
+        if (btn34_edge == BTN_SW3) {
+            // SW3: Start/Reset timer
+            DragScreenHandler_Start();
+        } else if (btn12_edge == BTN_SW1) {
+            // SW1: Reset timer
+            DragScreenHandler_Reset();
+        }
     }
 }

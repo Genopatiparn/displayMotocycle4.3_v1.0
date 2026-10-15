@@ -5,11 +5,12 @@
 #include "soc/gpio_sig_map.h"
 #include "esp_rom_gpio.h"
 
-// KLINE_MODE = 3 (HONDA GIORNO+ / CLICK125 / s4)
-#if KLINE_MODE == 1
+// KLINE_MODE = 3 (HONDA GIORNO+ / CLICK125)
+#if KLINE_MODE == 99
 
-bool kline_use_handshake = true;   
-bool kline_handshake_done = false; 
+// ตัวแปรควบคุม Handshake (global - ใช้ได้ทุกไฟล์)
+bool kline_use_handshake = true;   // เปิดใช้งาน Handshake โดยค่าเริ่มต้น
+bool kline_handshake_done = false; // ยังไม่ได้ทำ Handshake
 
 namespace {
 
@@ -17,7 +18,7 @@ HardwareSerial kline_serial(2);
 constexpr uint32_t KLINE_BAUD_RATE = 10400;
 constexpr uint32_t KLINE_DATA_TIMEOUT_MS = 500;
 
-// ชุดคำสั่งสำหรับ Giorno+ / Click125 /s4(0x17 - 21 Bytes)
+// ชุดคำสั่งสำหรับ Giorno+ / Click125 (0x17 - 21 Bytes)
 const uint8_t cmd_17[7] = {0x72, 0x07, 0x72, 0x17, 0x00, 0x0F, 0xEF}; 
 const uint8_t cmd_20[7] = {0x72, 0x07, 0x72, 0x20, 0x00, 0x02, 0xF3}; // AFR
 
@@ -49,13 +50,24 @@ void send_kline_command(const uint8_t* command, size_t length) {
 }
 
 void KLine_BeginUART(void) {
-
+    // Configure UART with large RX buffer to prevent overflow
     kline_serial.setRxBufferSize(512);
     kline_serial.begin(KLINE_BAUD_RATE, SERIAL_8N1, static_cast<int>(KLINE_RX_PIN), -1);
+    
+    // ✅ ต้องใช้ UART inversion เพราะ transistor BC817 จะ invert อีกรอบ!
+    // Wake pulse ใช้ digitalWrite() → ไม่ผ่าน UART inversion
+    // แต่ data communication ใช้ UART → ต้อง invert
     uart_set_line_inverse(UART_NUM_2, UART_SIGNAL_TXD_INV);
+    
+    // เชื่อม GPIO กับ UART peripheral
     esp_rom_gpio_connect_out_signal(static_cast<uint32_t>(KLINE_TX_PIN), U2TXD_OUT_IDX, false, false);
 }
 
+// ====================================================================================
+// ส่ง 5-baud Wake Pulse ตามโปรโตคอล Honda Giorno+
+// Pin TX Low (70ms) → Transistor OFF → K-Line HIGH
+// Pin TX High (120ms) → Transistor ON → K-Line LOW
+// ====================================================================================
 void KLine_SendWakeupPulse() {
 
     kline_serial.end();
@@ -85,6 +97,10 @@ bool KLine_SendHandshake() {
 
     for (uint8_t round = 0; round < total_rounds && !step1_success; round++) {
         const uint8_t step1_attempts = ((round % 2) == 0) ? 5U : 1U;
+
+        Serial.printf("\n[Handshake] Step 1 round %d/%d: wake pulse + %d attempt(s)...\n",
+                      round + 1, total_rounds, step1_attempts);
+
         KLine_SendWakeupPulse();
         delay(5);
 
@@ -122,6 +138,7 @@ bool KLine_SendHandshake() {
                     rx_buf[i+2] == expected_step1[2] &&
                     rx_buf[i+3] == expected_step1[3]) {
                     step1_success = true;
+                    Serial.println(" [Handshake] Step 1 SUCCESS!");
                     break;
                 }
             }
