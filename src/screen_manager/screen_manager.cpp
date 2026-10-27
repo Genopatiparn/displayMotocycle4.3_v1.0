@@ -4,6 +4,7 @@
 #include "application/handlers/drag_screen_handler.h"
 #include "application/handlers/radar_screen_handler.h"
 #include "application/handlers/settingScreenHandler.h"
+#include "application/handlers/customUIHandler.h"
 #include <Arduino.h>
 
 static screen_type_t current_screen = SCREEN_HOME;
@@ -27,6 +28,9 @@ void ScreenManager_Init(void)
     RadarScreenHandler_Init();
     DragScreenHandler_Init();
     SettingScreenHandler_Init();
+
+    // Load custom UI config for home screen display
+    CustomUIHandler_LoadConfig();
 
     for (uint8_t index = 0; index < MENU_ITEM_MAX; index++) {
         menu_icons[index] = MenuScreenHandler_GetIcon(index);
@@ -57,6 +61,16 @@ void ScreenManager_SwitchTo(screen_type_t screen)
             break;
         case SCREEN_SETTING:
             lv_screen_load(SettingScreenHandler_GetScreen());
+            break;
+        case SCREEN_CUSTOM_UI:
+            CustomUIHandler_Init();
+            if (CustomUIHandler_GetScreen() == NULL) {
+                Serial.println("[ScreenManager] Custom UI initialization failed");
+                current_screen = SCREEN_SETTING;
+                lv_screen_load(SettingScreenHandler_GetScreen());
+                break;
+            }
+            lv_screen_load(CustomUIHandler_GetScreen());
             break;
         default:
             break;
@@ -127,6 +141,29 @@ void ScreenManager_HandleButton(button_status_t btn12, button_status_t btn34)
         }
     } else if ((current_screen == SCREEN_DRAG || current_screen == SCREEN_RADAR || current_screen == SCREEN_SETTING) && btn34_edge == BTN_SW4) {
         ScreenManager_SwitchTo(SCREEN_HOME);
+    } else if (current_screen == SCREEN_SETTING) {
+        if (btn12_edge == BTN_SW2) {
+            SettingScreenHandler_NavDown();
+        } else if (btn12_edge == BTN_SW1) {
+            SettingScreenHandler_NavUp();
+        }
+
+        if (btn34_edge == BTN_SW3) {
+            SettingScreenHandler_Select();
+        }
+    } else if (current_screen == SCREEN_CUSTOM_UI) {
+        if (btn12_edge == BTN_SW2) {
+            CustomUIHandler_NavDown();
+        } else if (btn12_edge == BTN_SW1) {
+            CustomUIHandler_NavUp();
+        } else if (btn34_edge == BTN_SW3) {
+            CustomUIHandler_Select();
+        } else if (btn34_edge == BTN_SW4) {
+            CustomUIHandler_Exit();
+            if (CustomUIHandler_GetScreen() == NULL) {
+                ScreenManager_SwitchTo(SCREEN_SETTING);
+            }
+        }
     } else if (current_screen == SCREEN_DRAG) {
         // Drag Screen controls
         if (btn34_edge == BTN_SW3) {

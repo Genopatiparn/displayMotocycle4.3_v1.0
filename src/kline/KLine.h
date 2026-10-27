@@ -15,6 +15,9 @@ struct KLineData {
     int16_t  tinj;         
     int16_t  speed;        // ความเร็ว km/h
     uint16_t inj_duty;     // ภาระหัวฉีด (0-100%) 
+    uint16_t battery_voltage_x10; // แรงดันแบตเตอรี่ หน่วย 0.1V
+    uint8_t stf_raw;       // Short-term fuel trim raw
+    uint8_t ltf_raw;       // Long-term fuel trim raw
 };
 
 // ฟังก์ชันหลัก

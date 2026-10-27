@@ -4,16 +4,18 @@
 #include "LVGL_Driver.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include <string.h>
 
 static lv_display_t *s_disp       = NULL;
-static TaskHandle_t  s_lvgl_task  = NULL;
 static QueueHandle_t s_flush_queue = NULL;
+static SemaphoreHandle_t s_flush_done = NULL;
 
 void* buf1 = NULL;
 void* buf2 = NULL;
 
-void Lvgl_Set_Task_Handle(TaskHandle_t h) { s_lvgl_task = h; }
+// Keep the existing header API for compatibility; flush completion now uses a semaphore.
+void Lvgl_Set_Task_Handle(TaskHandle_t h) { (void)h; }
 
 typedef struct {
     int           x1, y1, x2, y2;
@@ -27,13 +29,16 @@ static void flush_task(void *arg)
     flush_job_t job;
     while (1) {
         if (xQueueReceive(s_flush_queue, &job, portMAX_DELAY) == pdTRUE) {
-            esp_lcd_panel_draw_bitmap(rgb_panel_handle,
-                                      job.x1, job.y1, job.x2 + 1, job.y2 + 1,
-                                      job.px_map);
-            lv_display_flush_ready(job.disp);
-            if (s_lvgl_task) {
-                xTaskNotifyGive(s_lvgl_task);
+            // In RGB framebuffer mode, draw_bitmap copies this region to the panel framebuffer.
+            const esp_err_t result = esp_lcd_panel_draw_bitmap(
+                rgb_panel_handle, job.x1, job.y1, job.x2 + 1, job.y2 + 1,
+                job.px_map);
+            if (result != ESP_OK) {
+                printf("[LVGL] draw_bitmap failed: %d\n", (int)result);
             }
+            // With flush_wait_cb registered, signal completion through the semaphore.
+            // Do NOT also call lv_display_flush_ready(): LVGL clears flushing itself.
+            xSemaphoreGive(s_flush_done);
         }
     }
 }
@@ -50,13 +55,15 @@ void Lvgl_Display_LCD(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map
         .disp   = disp,
     };
     xQueueSend(s_flush_queue, &job, portMAX_DELAY);
-    // lv_display_flush_ready called from flush_task after draw_bitmap completes
+    // Completion is signalled by flush_task through s_flush_done.
 }
 
 /* Called by LVGL while it waits for the previous flush to finish */
 static void lvgl_wait_cb(lv_display_t *disp)
 {
-    ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1));
+    (void)disp;
+    // Do not return until the previous draw_bitmap has completed.
+    xSemaphoreTake(s_flush_done, portMAX_DELAY);
 }
 
 void Lvgl_Touchpad_Read(lv_indev_t *indev, lv_indev_data_t *data)
@@ -76,11 +83,14 @@ void Lvgl_Init(void)
     lv_init();
 
     s_flush_queue = xQueueCreate(4, sizeof(flush_job_t));
+    s_flush_done = xSemaphoreCreateBinary();
+    configASSERT(s_flush_queue != NULL && s_flush_done != NULL);
     xTaskCreatePinnedToCore(flush_task, "lvgl_flush", 4096, NULL, configMAX_PRIORITIES - 1, NULL, 0);
 
     buf1 = heap_caps_malloc(LVGL_BUF_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
     buf2 = heap_caps_malloc(LVGL_BUF_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
     printf("[LVGL] buf1=%p buf2=%p\n", buf1, buf2);
+    configASSERT(buf1 != NULL && buf2 != NULL);
 
     s_disp = lv_display_create(LVGL_WIDTH, LVGL_HEIGHT);
     lv_display_set_color_format(s_disp, LV_COLOR_FORMAT_RGB565);

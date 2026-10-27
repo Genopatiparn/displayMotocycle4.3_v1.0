@@ -48,6 +48,9 @@ LV_FONT_DECLARE(ui_font_Antonio60);
 LV_FONT_DECLARE(ui_font_NexaB10);
 LV_FONT_DECLARE(ui_font_NexaB15);
 LV_FONT_DECLARE(ui_font_NexaB20);
+LV_FONT_DECLARE(ui_font_uifontAntonio24);
+LV_FONT_DECLARE(ui_font_uifontAntonio12);
+LV_FONT_DECLARE(ui_font_uifontAntonio14);
 
 // UI INIT
 void ui_init(void);

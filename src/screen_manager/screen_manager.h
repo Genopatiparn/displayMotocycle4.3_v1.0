@@ -13,6 +13,7 @@ typedef enum {
     SCREEN_DRAG,
     SCREEN_RADAR,
     SCREEN_SETTING,
+    SCREEN_CUSTOM_UI,
     SCREEN_MAX
 } screen_type_t;
 

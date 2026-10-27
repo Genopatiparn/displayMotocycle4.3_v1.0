@@ -7,7 +7,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-// KLINE_MODE = 1 (HONDA GIORNO+ / CLICK125)
 #if KLINE_MODE == 1
 
 bool kline_use_handshake = true;
@@ -23,7 +22,7 @@ constexpr uint32_t KLINE_DATA_TIMEOUT_MS = 2000;
 // Polling 
 constexpr uint32_t RX_TIMEOUT_MS = 30; 
 constexpr uint32_t RX_SILENCE_MS = 4;
-constexpr uint32_t ENGINE_REQUEST_INTERVAL_MS = 25;
+constexpr uint32_t ENGINE_REQUEST_INTERVAL_MS = 30;
 
 const uint8_t cmd_17[7] = { 0x72, 0x07, 0x72, 0x17, 0x00, 0x0F, 0xEF };
 const uint8_t cmd_20[7] = { 0x72, 0x07, 0x72, 0x20, 0x00, 0x02, 0xF3 };
@@ -34,11 +33,14 @@ static int16_t  latest_engine_temp = 0;
 static int16_t  latest_map = 0;
 static int16_t  latest_tps = 0;         
 static int16_t  latest_ignition = 0;
-static int16_t  latest_afr = 100;
+static int16_t  latest_afr = 0;
 static bool afr_nonzero_sample_seen = false;
 static int16_t  latest_tinj = 0;
 static int16_t  latest_speed = 0;
 static uint16_t latest_inj_duty = 0;
+static uint16_t latest_battery_voltage_x10 = 0;
+static uint8_t latest_stf_raw = 0;
+static uint8_t latest_ltf_raw = 0;
 static uint32_t last_valid_data_time = 0;
 
 constexpr bool AFR_USE_SIGNED_RAW = true; 
@@ -231,9 +233,7 @@ bool KLine_SendHandshake() {
 
         // STEP 1
         for (uint8_t attempt = 0; attempt < fe_count; ++attempt) {
-
             send_kline_command( cmd_step1, sizeof(cmd_step1) );
-
             uint8_t rx_buf[128] = {};
             const size_t rx_len = receive_window( rx_buf, sizeof(rx_buf), HANDSHAKE_RX_MS );
         }
@@ -245,11 +245,8 @@ bool KLine_SendHandshake() {
         const size_t rx_len = receive_window( rx_buf, sizeof(rx_buf), HANDSHAKE_RX_MS );
         bool step2_ok = false;
 
-        for (size_t i = 0;
-             i + sizeof(expected_step2) <= rx_len;++i) {
-
-            if (memcmp( &rx_buf[i], expected_step2, sizeof(expected_step2) ) == 0) 
-             {
+        for (size_t i = 0; i + sizeof(expected_step2) <= rx_len;++i) {
+            if (memcmp( &rx_buf[i], expected_step2, sizeof(expected_step2) ) == 0) {
                 step2_ok = true;
                 break;
             }
@@ -298,11 +295,10 @@ void KLine_Poll(void) {
     }
 
     static uint32_t last_request_ms = 0;
-    static bool request_afr_next = true;
+    static bool request_afr_next = true; // สลับอ่าน Engine 1 ครั้ง : AFR 1 ครั้ง (1:1)
     static uint8_t failed_engine_frames = 0;
     const uint32_t now = millis();
 
-    // บังคับส่งทุกๆ 30ms ไม่มี pause
     if ((now - last_request_ms) < ENGINE_REQUEST_INTERVAL_MS) {
         return;
     }
@@ -320,6 +316,11 @@ void KLine_Poll(void) {
         const uint8_t* resp = find_valid_response( rx_buf, rx_len, 8, 0x20 );
 
         if (resp != nullptr) {
+            const uint8_t stf_raw = resp[6];
+            portENTER_CRITICAL(&kline_mux);
+            latest_stf_raw = stf_raw;
+            portEXIT_CRITICAL(&kline_mux);
+
             const uint8_t afr_raw_byte = resp[5];
             const int16_t afr_raw = interpret_afr_raw(afr_raw_byte);
 
@@ -344,8 +345,6 @@ void KLine_Poll(void) {
                 }
             }
         }
-        // ไม่ได้ response = ใช้ค่าเดิมต่อ
-
         return;
     }
 
@@ -365,7 +364,9 @@ void KLine_Poll(void) {
         const int16_t engine_temp = (raw_temp == 0xFF) ? -41 : static_cast<int16_t>(raw_temp) - 40;
         const int16_t map_val = 0;
         const int16_t speed_val = 0;
+        const uint16_t battery_voltage_x10 = resp[15];
         const uint16_t raw_tinj = (static_cast<uint16_t>(resp[16]) << 8) | resp[17];
+        const uint8_t ltf_raw = resp[19];
         const int16_t tinj = static_cast<int16_t>( raw_tinj / 25.0f );
         const int16_t ignition = (static_cast<int16_t>(resp[18]) * 5) - 640;
         uint16_t inj_duty = 0;
@@ -386,6 +387,8 @@ void KLine_Poll(void) {
         latest_tinj = tinj;
         latest_speed = speed_val;
         latest_inj_duty = inj_duty;
+        latest_battery_voltage_x10 = battery_voltage_x10;
+        latest_ltf_raw = ltf_raw;
         last_valid_data_time = stamp;
         portEXIT_CRITICAL(&kline_mux);
 
@@ -394,7 +397,6 @@ void KLine_Poll(void) {
     } else {
         ++failed_engine_frames;
 
-        // ถ้า fail มากเกินไป ให้รีเซ็ต UART แต่ไม่ reset ค่า (ใช้ค่าเดิมต่อ)
         if (failed_engine_frames >= 20) {
             failed_engine_frames = 0;
             reset_kline_uart();
@@ -413,6 +415,9 @@ KLineData KLine_GetData(void) {
     int16_t tinj;
     int16_t speed;
     uint16_t inj_duty;
+    uint16_t battery_voltage_x10;
+    uint8_t stf_raw;
+    uint8_t ltf_raw;
 
     portENTER_CRITICAL(&kline_mux);
 
@@ -425,11 +430,15 @@ KLineData KLine_GetData(void) {
     tinj = latest_tinj;
     speed = latest_speed;
     inj_duty = latest_inj_duty;
+    battery_voltage_x10 = latest_battery_voltage_x10;
+    stf_raw = latest_stf_raw;
+    ltf_raw = latest_ltf_raw;
 
     portEXIT_CRITICAL(&kline_mux);
 
     return {
-        rpm, engine_temp, map_val, tps, ignition, afr, tinj, speed, inj_duty };
+        rpm, engine_temp, map_val, tps, ignition, afr, tinj, speed, inj_duty,
+        battery_voltage_x10, stf_raw, ltf_raw };
 }
 
 #endif // KLINE_MODE == 1

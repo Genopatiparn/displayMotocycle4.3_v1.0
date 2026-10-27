@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define SETTING_ITEM_COUNT 13
+#define SETTING_ITEM_COUNT 3
 
 // Lifecycle
 void SettingScreenHandler_Init(void);

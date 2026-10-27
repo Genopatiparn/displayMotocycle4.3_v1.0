@@ -10,6 +10,9 @@ SET(SOURCES ui_Screen1.c
     fonts/ui_font_Antonio60.c
     fonts/ui_font_NexaB10.c
     fonts/ui_font_NexaB15.c
-    fonts/ui_font_NexaB20.c)
+    fonts/ui_font_NexaB20.c
+    fonts/ui_font_uifontAntonio24.c
+    fonts/ui_font_uifontAntonio12.c
+    fonts/ui_font_uifontAntonio14.c)
 
 add_library(ui ${SOURCES})

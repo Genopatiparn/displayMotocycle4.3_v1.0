@@ -1,4 +1,5 @@
 #include "settingScreenHandler.h"
+#include "screen_manager.h"
 
 #define MENU_START_Y 60
 #define MENU_ROW_H 30
@@ -9,26 +10,13 @@
 #define SCREEN_H 480
 #define MENU_PANE_W 400
 
-#define IDX_KLINE_PROTOCOL 0
-#define IDX_CAN_PROTOCOL   1
-#define IDX_DYNO_SETTINGS  2
-#define IDX_RACING_SETTINGS 3
-#define IDX_DEBUG          10
+#define IDX_CUSTOM_UI 0
+#define IDX_WIFI_Setting 1
 #define IDX_EXIT (SETTING_ITEM_COUNT - 1)
 
 static const char *MENU_ITEMS[SETTING_ITEM_COUNT] = {
-    "K-line Protocol",
-    "CAN Protocol",
-    "Dyno Settings",
-    "Racing Settings",
-    "Shortcut Keys",
-    "Main Display Info",
-    "Sub Display Info",
-    "Connection",
-    "Screen Brightness",
-    "Factory Reset",
-    "Debug",
-    "About",
+    "Custom UI",
+    "WIFI Setting",
     "Exit"
 };
 
@@ -53,7 +41,7 @@ void SettingScreenHandler_Init(void)
     lv_label_set_text(_lblTitle, "SETTINGS");
     lv_obj_set_width(_lblTitle, LV_SIZE_CONTENT);
     lv_obj_set_height(_lblTitle, LV_SIZE_CONTENT);
-    lv_obj_set_pos(_lblTitle, SCREEN_W/2 - 60, MENU_Y);
+    lv_obj_set_pos(_lblTitle, SCREEN_W/2 - 200, MENU_Y);
     lv_obj_set_style_text_color(_lblTitle, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // Scrollable container
@@ -105,26 +93,13 @@ void SettingScreenHandler_NavDown(void)
 void SettingScreenHandler_Select(void)
 {
     switch (s_index) {
-        case IDX_KLINE_PROTOCOL:
-            // TODO: Open K-Line settings
+        case IDX_CUSTOM_UI:
+            ScreenManager_SwitchTo(SCREEN_CUSTOM_UI);
             break;
-            
-        case IDX_CAN_PROTOCOL:
-            // TODO: Open CAN settings
+        case IDX_WIFI_Setting:
+            ScreenManager_SwitchTo(SCREEN_CUSTOM_UI);
             break;
-            
-        case IDX_DYNO_SETTINGS:
-            // TODO: Open Dyno settings
-            break;
-            
-        case IDX_RACING_SETTINGS:
-            // TODO: Open Racing settings
-            break;
-            
-        case IDX_DEBUG:
-            // TODO: Open Debug screen
-            break;
-            
+
         case IDX_EXIT:
             SettingScreenHandler_Exit();
             break;
@@ -137,8 +112,7 @@ void SettingScreenHandler_Select(void)
 
 void SettingScreenHandler_Exit(void)
 {
-    // TODO: Return to main screen
-    SettingScreenHandler_Destroy();
+    ScreenManager_SwitchTo(SCREEN_HOME);
 }
 
 void SettingScreenHandler_Destroy(void)

@@ -145,8 +145,9 @@ void ui_Screen1_screen_init(void)
     ui_Label13 = lv_label_create(ui_Container1);
     lv_obj_set_width(ui_Label13, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_Label13, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label13, 61);
-    lv_obj_set_y(ui_Label13, 74);
+    lv_obj_set_x(ui_Label13, -2);
+    lv_obj_set_y(ui_Label13, -5);
+    lv_obj_set_align(ui_Label13, LV_ALIGN_BOTTOM_RIGHT);
     lv_label_set_text(ui_Label13, "km/h");
     lv_obj_set_style_text_font(ui_Label13, &ui_font_NexaB15, LV_PART_MAIN | LV_STATE_DEFAULT);
 
