@@ -26,7 +26,7 @@ static button_status_t buttonFromVoltage(float voltage_mV,
     if (voltage_mV < 4050.0f) {
         return firstButton; 
     }
-    if (voltage_mV < 4700.0f) {
+    if (voltage_mV < 4400.0f) {
         return secondButton;  
     }
     return BTN_NONE;  

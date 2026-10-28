@@ -13,6 +13,7 @@
 #include "application/handlers/menu_screen_handler.h"
 #include "application/handlers/drag_screen_handler.h"
 #include "application/handlers/customUIHandler.h"
+#include "application/handlers/wifiSettingHandler.h"
 
 extern bool kline_use_handshake;
 extern bool kline_handshake_done;
@@ -89,6 +90,7 @@ void setup()
 {
     Serial.begin(115200);
     Serial.println("\n\n=== ESP32-S3 Motorcycle Display - FAST BOOT ===");
+    WifiSettingHandler_ConnectSavedNetwork();
 
     LCD_RGB_Init();
     Lvgl_Init();
@@ -129,17 +131,21 @@ void loop()
         last_ui_update = millis();
 
         if (led_initialized) {
-            WS2811_ShowRPM(rpm, 12000);
+            WS2811_ShowRPM(rpm, WifiSettingHandler_GetMaxRpm());
         }
 
         if (ui_Screen1 != nullptr && lv_screen_active() == ui_Screen1) {
             if (abs((int)rpm - (int)last_rpm) > 5 || rpm == 0) {
-                const int32_t angle = ((int32_t)rpm * 2700) / 12000;
+                const int32_t max_rpm = WifiSettingHandler_GetMaxRpm();
+                const int32_t angle = max_rpm > 0
+                    ? ((int32_t)rpm * 2700) / max_rpm
+                    : 0;
+                const int32_t clamped_angle = angle > 2700 ? 2700 : angle;
 
-                if (abs(angle - last_angle) >= 5) {
-                    lv_arc_set_value(ui_Arc1, angle);
-                    lv_image_set_rotation(ui_Image3, angle);
-                    last_angle = angle;
+                if (abs(clamped_angle - last_angle) >= 5) {
+                    lv_arc_set_value(ui_Arc1, clamped_angle);
+                    lv_image_set_rotation(ui_Image3, clamped_angle);
+                    last_angle = clamped_angle;
                 }
                 lv_label_set_text_fmt(ui_Label1, "%u", (unsigned)rpm);
                 last_rpm = rpm;
@@ -157,6 +163,7 @@ void loop()
     button_status_t btn12 = adc_initialized ? ADC_ReadButton_SW12() : BTN_NONE;
     button_status_t btn34 = adc_initialized ? ADC_ReadButton_SW34() : BTN_NONE;
     ScreenManager_HandleButton(btn12, btn34);
+    WifiSettingHandler_Update();
 
     static button_status_t last_logged_btn12 = BTN_NONE;
     static button_status_t last_logged_btn34 = BTN_NONE;

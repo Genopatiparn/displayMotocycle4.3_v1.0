@@ -97,7 +97,7 @@ void SettingScreenHandler_Select(void)
             ScreenManager_SwitchTo(SCREEN_CUSTOM_UI);
             break;
         case IDX_WIFI_Setting:
-            ScreenManager_SwitchTo(SCREEN_CUSTOM_UI);
+            ScreenManager_SwitchTo(SCREEN_WIFI_SETUP);
             break;
 
         case IDX_EXIT:

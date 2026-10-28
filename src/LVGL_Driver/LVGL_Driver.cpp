@@ -90,7 +90,10 @@ void Lvgl_Init(void)
     buf1 = heap_caps_malloc(LVGL_BUF_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
     buf2 = heap_caps_malloc(LVGL_BUF_LEN, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
     printf("[LVGL] buf1=%p buf2=%p\n", buf1, buf2);
-    configASSERT(buf1 != NULL && buf2 != NULL);
+    configASSERT(buf1 != NULL);
+    if (buf2 == NULL) {
+        printf("[LVGL] Second DMA buffer unavailable; using single-buffer rendering\n");
+    }
 
     s_disp = lv_display_create(LVGL_WIDTH, LVGL_HEIGHT);
     lv_display_set_color_format(s_disp, LV_COLOR_FORMAT_RGB565);

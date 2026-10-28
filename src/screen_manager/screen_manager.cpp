@@ -5,6 +5,7 @@
 #include "application/handlers/radar_screen_handler.h"
 #include "application/handlers/settingScreenHandler.h"
 #include "application/handlers/customUIHandler.h"
+#include "application/handlers/wifiSettingHandler.h"
 #include <Arduino.h>
 
 static screen_type_t current_screen = SCREEN_HOME;
@@ -71,6 +72,16 @@ void ScreenManager_SwitchTo(screen_type_t screen)
                 break;
             }
             lv_screen_load(CustomUIHandler_GetScreen());
+            break;
+        case SCREEN_WIFI_SETUP:
+            WifiSettingHandler_Init();
+            if (WifiSettingHandler_GetScreen() == NULL) {
+                Serial.println("[ScreenManager] Wi-Fi setup initialization failed");
+                current_screen = SCREEN_SETTING;
+                lv_screen_load(SettingScreenHandler_GetScreen());
+                break;
+            }
+            lv_screen_load(WifiSettingHandler_GetScreen());
             break;
         default:
             break;
@@ -163,6 +174,10 @@ void ScreenManager_HandleButton(button_status_t btn12, button_status_t btn34)
             if (CustomUIHandler_GetScreen() == NULL) {
                 ScreenManager_SwitchTo(SCREEN_SETTING);
             }
+        }
+    } else if (current_screen == SCREEN_WIFI_SETUP) {
+        if (btn34_edge == BTN_SW4) {
+            WifiSettingHandler_Exit();
         }
     } else if (current_screen == SCREEN_DRAG) {
         // Drag Screen controls
